@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+# Run Maven with a Java 8 JDK without changing the global Java default.
+# Override with JAVA8_HOME / MAVEN_BIN if auto-detection does not find them.
+set -eu
+
+is_java8() { [ -x "$1/bin/java" ] && "$1/bin/java" -version 2>&1 | grep -q 'version "1\.8'; }
+
+if [ -z "${JAVA8_HOME:-}" ]; then
+  # java_home may silently return a newer JDK, so every candidate is version-checked.
+  for c in "$(/usr/libexec/java_home -v 1.8 2>/dev/null || true)" \
+           "$HOME"/.local/jdks/*8*/Contents/Home \
+           /Library/Java/JavaVirtualMachines/*8*/Contents/Home \
+           "$HOME"/Library/Java/JavaVirtualMachines/*8*/Contents/Home \
+           /usr/lib/jvm/*8*; do
+    if [ -n "$c" ] && is_java8 "$c"; then JAVA8_HOME="$c"; break; fi
+  done
+fi
+JAVA8_HOME="${JAVA8_HOME:-}"
+MAVEN_BIN="${MAVEN_BIN:-$(command -v mvn 2>/dev/null || true)}"
+
+if [ -z "$JAVA8_HOME" ] || ! is_java8 "$JAVA8_HOME"; then
+  echo "Java 8 not found${JAVA8_HOME:+ (not a Java 8 JDK: $JAVA8_HOME)}" >&2
+  echo "Install a Java 8 JDK, or set JAVA8_HOME to it (e.g. in ~/.zshrc) and retry." >&2
+  exit 1
+fi
+
+if [ -z "$MAVEN_BIN" ] || [ ! -x "$MAVEN_BIN" ]; then
+  echo "Maven not found${MAVEN_BIN:+ at: $MAVEN_BIN}" >&2
+  echo "Install Maven (brew install maven), or set MAVEN_BIN and retry." >&2
+  exit 1
+fi
+
+export JAVA_HOME="$JAVA8_HOME"
+export PATH="$JAVA_HOME/bin:$PATH"
+
+exec "$MAVEN_BIN" "$@"

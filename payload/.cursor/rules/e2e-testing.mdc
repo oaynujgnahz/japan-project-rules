@@ -1,0 +1,38 @@
+---
+description: Playwright E2E 与结合测试（Browser MCP / e2e 目录）
+globs: "e2e/**"
+alwaysApply: false
+---
+
+# E2E / 结合测试
+
+<!-- [CMPF] e2e/ 目录和 Playwright 配置是 CMPF-SRC 本地特有目录；将来由项目配置替换 -->
+## 目录
+
+- 脚本：`e2e/tests/**/*.spec.ts`
+- 配置：`e2e/playwright.config.ts`
+- 说明：`e2e/README.md`
+
+<!-- [CMPF] 06_画面設計書、MagicPod、Keycloak 登录属 CMPF 环境 -->
+## Agent 执行顺序
+
+1. 从 `docs/{機能}/06_画面設計書/` 或 RV 影响范围提取 smoke 路径
+2. 优先 **Playwright MCP** 或 **cursor-ide-browser** 跑关键路径
+3. 可复现脚本写入 `e2e/tests/`，勿只依赖 MagicPod 手工
+4. 登录/Keycloak 场景：用测试账号或 skip 并注明需人工
+
+## 命令
+
+```bash
+cd e2e && npm install && npx playwright install chromium
+npm test
+npm run test:ui   # 调试
+```
+
+## 通过标准
+
+- 主流程：打开画面 → 检索/保存/错误提示 至少一条 happy path
+- 失败：先把 `結合テスト大纲_模板.md` 复制为 `docs/{機能}/結合テスト大纲.md`，截图 + 步骤写入该副本（**不改模板本身**）
+- 模板：`docs/ai-native/結合テスト大纲_模板.md`
+
+启用见 `docs/ai-native/MCP_Setup.md` 与 `.cursor/mcp.json.example`。

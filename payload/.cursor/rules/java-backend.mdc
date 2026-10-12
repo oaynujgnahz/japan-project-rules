@@ -1,0 +1,81 @@
+---
+description: CMPF Java/Spring Boot 后端编码与数据层规范
+globs: "**/*.java,**/mapper/**/*.xml,**/*.sql"
+alwaysApply: false
+---
+
+<!-- [CMPF] 整份为 CMPF 后端技术栈（Java 8 / Spring Boot / MyBatis / JUnit 4）专属；将来移到技术栈配置 -->
+# Java Backend
+
+## 结构
+
+<!-- [CMPF] com.ntt.cmpf 包结构、carbonapi 的 SQL 路径属 CMPF -->
+- 包：`com.ntt.cmpf.{module}.*`（controller / service / mapper / dto / entity）
+- MyBatis XML：`{module}/src/main/resources/mapper/`
+- SQL 脚本：`carbonapi/src/main/resources/sql/` 或根目录 `.sql`
+- 新功能类名按业务域命名，避免滥用 `Ghg` 等宽泛前缀
+
+## 对齐要求
+
+- Controller、Service、Mapper、DTO/Entity、XML mapper 同步变更
+- 新 DB 功能：检查 SQL、mapper XML、Java model、frontend API 类型是否都要改
+- 保持 XML resultMap 与 entity 字段一致
+
+<!-- [CMPF] MyBatis Generator 生成实体自动 trim 是 CMPF 生成配置下的坑；示例类为 CMPF 色統一功能 -->
+## MyBatis Generator 生成实体的陷阱
+
+- `dto/entity/dbo/*Entity` 等生成实体的 String setter **会自动 trim**（前后空格被去掉）
+- 需要原样存取字符串（名称作为键、仅空格不同须区分等）时：**不要改生成文件**，另建 DTO + 自定义 SpecMapper SQL 直接绑定参数（参照 `AnalysisChartColorAssignedSlot` / `AnalysisChartColorAssignSpecMapper`）
+- 判断名称是否“相同”的逻辑前后端须一致（是否 trim、空字符串与 null 的区别）
+
+## 硬编码画面文言
+
+- `i18n-locale.mdc` 只管 locale 文件；SQL（如 `COALESCE(name, '上記以外')`）、Java、TS 中写死的画面可见文言同样须检查
+- 新增代码不得在 SQL / Java 中写死画面文言；既有的写死文言若影响本次需求（如多语言下显示或颜色不一致），须在 RV 中列出并说明处理方针
+
+## 模式
+
+- Lombok、MapStruct、PageHelper、MyBatis Plus 按模块既有用法
+- Service 承载业务；Controller 薄层
+- 异常、空值、非法输入、外部 API 失败路径必须处理
+- 实装前先搜索同类功能，比对业务逻辑与主键（防覆盖/漏校验）
+
+## 注释
+
+<!-- [CMPF] 注释写日文或英文、禁止中文注释及 hook 为对日项目要求 -->
+- 日语或英语；写 **为什么**（业务规则、例外原因、兼容性），不写「getter/setter 取得」类废话
+- 复杂分支、魔法数、workaround 必须注释理由
+- 注释中不写 BR / AC / Q 编号、`docs/` 路径、设计书名（本地专用规则，提交物中不可出现）；用业务语言说明
+- 中文注释检查：Cursor 内由 hook 自动执行；**在 Cursor 以外编辑时**，每个改动文件须手动执行：
+
+```bash
+export F=path/to/Edited.java
+python3 -c 'import json,os;p=os.environ["F"];print(json.dumps({"hook_event_name":"afterFileEdit","conversation_id":"manual","file_path":os.path.abspath(p),"workspace_roots":[os.getcwd()],"edits":[{"old_string":"","new_string":open(p,encoding="utf-8").read()}]}))' \
+  | .cursor/hooks/check-no-chinese-comments.py
+```
+
+  stdout 为 `{}` 即通过；含 `additional_context` / stderr 含 `BLOCKER` 则须改为日文或英文
+
+```java
+// ❌ 既存レコードを上書き
+repo.save(entity);
+
+// ✅ 主キー不一致は新規、一致時のみ更新（DisclosureService と同パターン）
+if (existing == null) { repo.insert(entity); }
+else if (Objects.equals(existing.getId(), entity.getId())) { repo.update(entity); }
+else { throw new BusinessException("..."); }
+```
+
+## 报告 / 文件生成
+
+<!-- [CMPF] carbonapi 报告生成、cmpf-report-file-io skill、PCF 等日文业务术语属 CMPF -->
+- `carbonapi` 中 Excel、PDF、PPT、报告生成对 fonts、模板、坐标敏感
+- 改动前读既有实现；参照 `cmpf-report-file-io` skill
+- PCF、电力连携、报告、削減相关保留日语业务术语（除非用户要求翻译）
+
+## 测试
+
+<!-- [CMPF] JUnit 4、{module} 路径和测试样例类属 CMPF -->
+- `{module}/src/test/java/.../{Class}Test.java`（JUnit 4）
+- POI/PPT/Excel：classpath 模板 + 断言
+- 参照 `PcfCalculationExcelTemplateComposerTest`、`carbonapi/.../report/*Test.java`

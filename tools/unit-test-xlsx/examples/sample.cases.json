@@ -1,0 +1,36 @@
+{
+ "_comment": "【サンプル】架空の機能「お知らせ管理」。形式説明用で、実在の案件・画面とは無関係。",
+ "meta": {"feature": "サンプル_お知らせ管理", "author": "", "created": "2026-01-01", "updater": "", "updated": "",
+          "design_doc": "docs/サンプル_お知らせ管理/", "lang": "ja"},
+ "layout": [
+  {"section": "【SCR-SAMPLE-01 お知らせ一覧】検索エリア", "ref": "SCR-SAMPLE-01", "cases": [
+   {"viewpoint": "画面レイアウト", "name": "画面タイトル", "type": "TT", "label": "お知らせ一覧",
+    "note": "画面左上に表示される", "ref": "AC-01", "verify": "結合"},
+   {"viewpoint": "画面レイアウト", "name": "検索ボタン", "type": "BTN", "label": "検索",
+    "align": "中", "note": "キーワード欄の右に表示される", "ref": "AC-01", "verify": "結合"},
+   {"viewpoint": "多言語対応チェック", "name": "画面タイトル（en）", "type": "TT", "label": "Notices",
+    "note": "言語を英語に切り替えると「Notices」と表示される", "ref": "AC-04", "verify": "結合"}
+  ]}
+ ],
+ "operation": [
+  {"section": "【SCR-SAMPLE-01 / API-SAMPLE-01 お知らせ検索】", "ref": "API-SAMPLE-01", "cases": [
+   {"viewpoint": "初期化チェック", "item": "初期表示", "step": "メニューから「お知らせ一覧」を開く",
+    "branch": "公開中のお知らせが 3 件", "expected": "一覧に 3 件が掲載日の新しい順に表示され、キーワード欄は空欄",
+    "ref": "BR-01 / AC-01", "verify": "結合"},
+   {"viewpoint": "分岐網羅", "item": "キーワード検索", "step": "キーワード「点検」を入力して「検索」を押下",
+    "branch": "件名に「点検」を含むお知らせが 1 件", "expected": "一覧に該当の 1 件だけが表示され、件数表示が「1件」になる",
+    "ref": "BR-02 / AC-02", "verify": "JUnit"},
+   {"viewpoint": "境界値", "item": "表示件数上限", "step": "条件なしで「検索」を押下",
+    "branch": "公開中のお知らせが 101 件", "branch1": "上限 100 件", "expected": "一覧に 100 件が表示され、「表示件数の上限を超えています」と表示される",
+    "ref": "BR-03 / Q-01", "verify": "JUnit"}
+  ]}
+ ],
+ "check": [
+  {"section": "【SCR-SAMPLE-01】入力チェック", "ref": "SCR-SAMPLE-01", "cases": [
+   {"viewpoint": "境界値", "field": "キーワード", "screen": "お知らせ一覧", "branch1": "全角 51 文字",
+    "expected": "エラーメッセージ「キーワードは50文字以内で入力してください」（SMPL0001-E）が表示される", "ref": "BR-04", "verify": "JUnit"},
+   {"viewpoint": "多言語対応チェック", "field": "キーワード", "screen": "お知らせ一覧", "branch1": "全角 51 文字", "branch2": "英語",
+    "expected": "Error message \"Keyword must be 50 characters or less\" (SMPL0001-E) is displayed", "ref": "BR-04", "verify": "JUnit"}
+  ]}
+ ]
+}

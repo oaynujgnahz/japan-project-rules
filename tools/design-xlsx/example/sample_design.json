@@ -1,0 +1,140 @@
+{
+  "feature": "サンプル機能",
+  "version": "1.00",
+  "system": "（システム名）",
+  "date": "2026-01-15",
+  "author": "（作成者）",
+  "history": [
+    {"version": "1.00", "date": "2026-01-15", "author": "（作成者）", "content": "docs/サンプル機能/ の MD より初版作成"}
+  ],
+  "api_doc": {"id": "API-SAMPLE-SEARCH"},
+  "screen_doc": {"id": "SCR-SAMPLE"},
+  "screens": [
+    {
+      "id": "SCR-SAMPLE",
+      "type": "screen",
+      "name": "サンプル一覧",
+      "refs": {"br": ["BR-01"], "ac": ["AC-01"], "q": []},
+      "layout": {
+        "summary": "キーワードでサンプルデータを検索し、一覧に表示する画面。",
+        "images": [{"caption": "サンプル一覧画面", "path": "layout_sample.png", "width_px": 800}],
+        "notes": [
+          "・検索ボタン押下でサンプル検索APIを呼び出し、結果を一覧に表示する。（BR-01）",
+          "・該当データが無い場合は「該当データがありません」を表示する。（BR-02 / AC-02）"
+        ]
+      },
+      "items": [
+        {"id": "SCR-SAMPLE-I01", "type": "item", "name": "サンプル一覧", "group": "画面タイトル", "widget": "項目ラベル", "physical": "-", "event": null, "fixed": "固定", "io": "-", "remarks": null, "refs": {"br": [], "ac": [], "q": []}},
+        {"id": "SCR-SAMPLE-I02", "type": "item", "name": "キーワード", "group": "検索条件", "widget": "テキストボックス", "physical": "keyword", "event": null, "fixed": "可変", "io": "I", "max_length": "50", "initial": "空白", "remarks": "前後の空白は除去する", "refs": {"br": ["BR-01"], "ac": [], "q": []}},
+        {"id": "SCR-SAMPLE-I03", "type": "item", "name": "検索", "group": "", "widget": "ボタン", "physical": "-", "event": "検索ボタン処理", "fixed": "固定", "io": "-", "remarks": null, "refs": {"br": [], "ac": [], "q": []}},
+        {"id": "SCR-SAMPLE-I04", "type": "item", "name": "名称", "group": "一覧", "widget": "項目ラベル", "physical": "name", "event": null, "fixed": "可変", "io": "O", "sort": "あり", "remarks": "該当なしの場合は「該当データがありません」（AC-02）", "refs": {"br": ["BR-02"], "ac": ["AC-02"], "q": []}},
+        {"id": "SCR-SAMPLE-I05", "type": "item", "name": "更新日", "group": "", "widget": "項目ラベル", "physical": "updateTime", "event": null, "fixed": "可変", "io": "O", "format": "日付", "sort": "あり", "remarks": "YYYY-MM-DD", "refs": {"br": [], "ac": [], "q": []}}
+      ],
+      "params": [],
+      "events": [
+        {
+          "id": "SCR-SAMPLE-E01", "type": "event", "name": "初期表示処理",
+          "refs": {"br": [], "ac": ["AC-01"], "q": []},
+          "steps": [
+            {"kind": "step", "text": "1 画面を初期化する。"},
+            {"kind": "text", "text": "キーワードを空白にし、一覧は表示しない。（AC-01）"}
+          ]
+        },
+        {
+          "id": "SCR-SAMPLE-E02", "type": "event", "name": "検索ボタン処理",
+          "refs": {"br": ["BR-01", "BR-02"], "ac": ["AC-02"], "q": ["Q-1"]},
+          "steps": [
+            {"kind": "step", "text": "1 サンプルデータを取得する。"},
+            {"kind": "text", "text": "サンプル検索APIを呼び出す。"},
+            {"kind": "api", "api": "サンプル検索API（API-SAMPLE-SEARCH）", "api_id": "API-SAMPLE-SEARCH",
+             "rows": [{"item": "キーワード", "io": "I", "value": "画面項目.キーワード", "note": "前後空白を除去"}]},
+            {"kind": "step", "text": "2 取得結果を一覧に表示する。"},
+            {"kind": "display", "rows": [
+              {"group": "一覧", "item": "名称", "state": "表示", "value": "レスポンス.サンプルリスト[i].名称", "note": ""},
+              {"group": "", "item": "更新日", "state": "表示", "value": "レスポンス.サンプルリスト[i].更新日時", "note": "YYYY-MM-DD"}
+            ]},
+            {"kind": "text", "text": "0 件の場合は「該当データがありません」を表示する。（BR-02 / AC-02）"},
+            {"kind": "ref", "text": "表示件数の上限は確認中。", "see": "※Q-1 を参照"}
+          ]
+        }
+      ]
+    }
+  ],
+  "apis": [
+    {
+      "id": "API-SAMPLE-SEARCH",
+      "type": "api",
+      "name": "サンプル検索",
+      "refs": {"br": ["BR-01", "BR-02"], "ac": [], "q": []},
+      "summary": "キーワードに一致するサンプルデータの一覧を返却する。",
+      "url": "/sample/search",
+      "method": "POST",
+      "request": {"items": [
+        {"name": "キーワード", "physical": "keyword", "data_type": "String", "note": "最大50文字"}
+      ]},
+      "response": {"items": [
+        {"name": "処理結果コード", "physical": "code", "data_type": "Integer"},
+        {"name": "サンプルリスト", "physical": "body", "data_type": "List<SampleDto>", "note": "G"},
+        {"name": "名称", "physical": "name", "data_type": "String", "child": true},
+        {"name": "更新日時", "physical": "updateTime", "data_type": "Date", "child": true}
+      ]},
+      "steps": [
+        {
+          "id": "API-SAMPLE-SEARCH-S01", "type": "step", "name": "リクエストをチェックする",
+          "refs": {"br": ["BR-01"], "ac": [], "q": []},
+          "body": [
+            {"kind": "text", "text": "以下に該当する場合、エラーコード E0001 を返却して処理を終了する。"},
+            {"kind": "check", "rows": [
+              {"id": "API-SAMPLE-SEARCH-S01-C01", "type": "check", "name": "リクエスト.キーワード", "condition": "51文字以上", "note": "E0001", "error_code": "E0001", "refs": {"br": ["BR-01"], "ac": [], "q": []}}
+            ]}
+          ]
+        },
+        {
+          "id": "API-SAMPLE-SEARCH-S02", "type": "step", "name": "サンプルデータを取得する",
+          "refs": {"br": [], "ac": [], "q": []},
+          "body": [
+            {"kind": "sql",
+             "select": [{"table": "サンプルテーブル", "item": "名称"}, {"table": "サンプルテーブル", "item": "更新日時"}],
+             "tables": [{"name": "サンプルテーブル（sample_tbl）"}],
+             "where": [
+               {"item": "名称", "op": "LIKE", "value": "'%' || リクエスト.キーワード || '%'"},
+               {"conj": "AND", "item": "削除フラグ", "op": "=", "value": "0"}
+             ],
+             "sort": [{"item": "更新日時", "order": "降順"}]}
+          ]
+        },
+        {
+          "id": "API-SAMPLE-SEARCH-S03", "type": "step", "name": "取得件数で分岐する",
+          "refs": {"br": ["BR-02"], "ac": [], "q": []},
+          "body": [
+            {"kind": "table", "headers": ["項番", "条件", "処理", "備考"], "rows": [
+              {"id": "API-SAMPLE-SEARCH-S03-B01", "type": "branch", "name": "1件以上", "refs": {"br": [], "ac": [], "q": []}, "cols": ["1件以上", "処理4へ進む", null]},
+              {"id": "API-SAMPLE-SEARCH-S03-B02", "type": "branch", "name": "0件", "refs": {"br": ["BR-02"], "ac": [], "q": []}, "cols": ["0件", "空のリストで処理4へ進む", "BR-02"]}
+            ]}
+          ]
+        },
+        {
+          "id": "API-SAMPLE-SEARCH-S04", "type": "step", "name": "レスポンス情報を設定する",
+          "refs": {"br": [], "ac": [], "q": []},
+          "body": [
+            {"kind": "response", "rows": [
+              {"item": "サンプルリスト", "value": "処理2 の取得結果", "level": 1},
+              {"item": "名称", "value": "処理2 の名称"},
+              {"item": "更新日時", "value": "処理2 の更新日時"}
+            ]}
+          ]
+        },
+        {
+          "id": "API-SAMPLE-SEARCH-S05", "type": "step", "name": "処理結果を戻す",
+          "refs": {"br": [], "ac": [], "q": []},
+          "body": [
+            {"kind": "result", "rows": [
+              {"item": "処理結果コード", "value": "200(成功)"},
+              {"item": "レスポンス", "value": "レスポンス情報"}
+            ]}
+          ]
+        }
+      ]
+    }
+  ]
+}

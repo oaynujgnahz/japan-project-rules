@@ -1,0 +1,86 @@
+---
+description: 设计书 RV、既存逻辑比对、AI-RV 可执行检查清单（实装完成前必输出）
+alwaysApply: true
+---
+
+# Review（RV）Checklist
+
+实装完成或宣称 done **之前**，必须输出本节 checklist 结果（✅/❌/N/A + 说明）。有 ❌ blocker 则继续修复，不得结束任务。
+
+## 1. 设计书 RV（`docs/{機能}/` 存在时）
+
+- [ ] API path / method 与 `07_API設計書/` 或 openapi 一致
+- [ ] 请求/响应字段名、类型、必填与实现一致
+- [ ] 校验规则（长度、格式、业务规则）与设计书一致
+- [ ] DB 表/列/主键与 SQL、entity、mapper 一致
+- [ ] 画面事件（检索、保存、删除、错误展示）与 `06_画面設計書/` 一致
+- [ ] **实装逻辑**（状态同步、新规/编辑分支、算法）已在对应 `06`/`07`/`詳細設計書`/`验收标准` 留存（`design-docs.mdc` §开发时设计留存）
+- [ ] `単体テスト項目_{機能}.xlsx` 已生成；行为变更已同步 Case，或明确标注 `N/A（非行为变更）`
+- [ ] 单体 Case 的 `試験観点` 与模板一致，汇总/公式/下拉框可用
+- [ ] 权限/公司 ID 过滤与既有同类 API 一致
+
+<!-- [CMPF] 标题中的「防 ESG 上传类问题」指 CMPF 过去出过的问题；本节比对项本身通用 -->
+## 2. 既存逻辑比对（必做，防 ESG 上传类问题）
+
+- [ ] 已读同类 Service/Controller/ Vue 实现并列出参照文件
+- [ ] **主键 / 唯一键** 与 insert/update 分支正确（无错误覆盖）
+- [ ] **error check** 与邻近功能同等粒度（非空、重复、状态、权限）
+- [ ] 删除/更新为逻辑删还是物理删，与既存一致
+- [ ] **状态残值**：修改「依赖其他选择项的字段」时，已列举该字段的全部写入/重置入口并逐个判定漏れ（见 `frontend-vue.mdc` §依赖字段リセット）
+- [ ] 外部 API 失败、空值、非法输入有处理路径
+<!-- [CMPF] 对日项目要求：源码注释写日文或英文、禁止简体中文注释，以及 .cursor/hooks 中文注释检查 -->
+- [ ] **源码注释为日文或英文；无简体中文注释**（日文汉字 OK；中文表述为 blocker。hook：`.cursor/hooks/`。在 Cursor 以外编辑时，后端和前端（`.java`、`.ts`、`.vue`）的每个改动文件都须手动检查，命令见 `java-backend.mdc` §注释；该脚本从标准输入读 JSON，不能直接执行）
+- [ ] **改修前行为比对**（改既有画面/API 时必做）：以 HEAD 代码为基准，按 `詳細設計書` 的「改修前挙動」表逐格比对 **分组、过滤、排序、空值（null / 空字符串 / 仅空格）、0 值、汇总词、多语言**，前后端分开判定；RV 结果中逐格写「一致」或「変更（对应 BR/AC）」。表中未标「変更」的格子出现差异即为 blocker。可行时附改修前后截图对比
+- [ ] **写死的画面文言**：SQL、Java、TS 中没有绕过 locale 写死的画面文言（例：SQL 把空名称替换成「上記以外」）；已有的写死文言列入「改修前挙動」表，并确认本次改动未依赖其固定语言
+
+## 3. AI-RV 输出格式（强制）
+
+```markdown
+## RV 结果
+### 一致项
+- ...
+### 差异项（须修复或说明理由）
+- ...
+### Blocker
+- [ ] 无 / 列出项
+### 参照既存代码
+- path/to/File.java, ...
+```
+
+<!-- [CMPF] 本节几乎整节为 CMPF 专属：PPT 优先、06_画面設計書、UI規範.md、只要 ja/en 不要 zh、用語辞書_日英.md、classic / new 路由 -->
+## 4. 前端/UI RV
+
+- [ ] **画面改修**：与 PPT 或 `06_画面設計書` 一致（`cmpf-core` 硬规则 + `ppt-first-ui.mdc`）；⏳ 未误报完成
+- [ ] 复用 `docs/ai-native/UI規範.md` 中的共通组件
+- [ ] ja / en locale key 齐全（**不需** `locale/zh`），术语符合 `用語辞書_日英.md`
+- [ ] classic / new 路由均已检查（如适用）
+- [ ] 与参照画面布局/按钮顺序无显著偏差
+
+## 5. 安全 RV（涉及 auth、SQL、上传、配置时）
+
+- [ ] 无硬编码密钥；未改 prd manifest
+- [ ] SQL 参数绑定，无拼接注入
+- [ ] 上传类型/大小校验存在
+<!-- [CMPF] application-dev.yml、mybatisGenerator.properties、generatorConfig.xml 属 Spring + MyBatis 技术栈；将来由项目配置的敏感文件清单替换 -->
+- [ ] **提交文件清单已逐个核对**：本地环境配置和含密钥的文件不得提交（常见：`application-dev.yml`、`mybatisGenerator.properties`、`generatorConfig.xml` 中的本地连接、与本次无关的 `package-lock.json` 变更、`.gitignore`）；清单中每个文件都能对应到本次需求
+
+## 6. 测试判定
+
+- [ ] 已在 HEAD 上跑同一组测试，记录**失败基线**（测试类名 + 失败原因）
+- [ ] 仅「HEAD 上通过、改动后失败」的测试算 blocker；基线中已有的失败列入本地 RV 结果的「差异项」，注明「改修前から失敗、本件と無関係」及根据
+- [ ] 新增测试全部通过，并写明执行命令和通过条数
+- [ ] 需要联调才能验证的项目（并发、改修前后对比等）在 RV 结果中单独列出，标明「未実施」或已实施的判定方法（例：并发以 SQL 结果判定，不以截图判定）
+
+## 7. 提交前扫描（本地规则不得外泄）
+
+本仓库由甲方管理。`AGENTS.md`、`.cursor/`、`docs/`、RV 结果等本地规则和资料**不得出现在提交内容中**。
+
+<!-- [CMPF] 扫描清单中的 mvn8、e2e/、scripts/ 是 CMPF-SRC 特有文件和目录；BR/AC/Q 编号和 docs/ 为通用项。将来关键词从 project.yaml 读取 -->
+- [ ] 暂存区不含本地规则和资料文件：`git diff --cached --name-only` 中无 `AGENTS.md`、`.cursor/`、`.github/`、`docs/`、`e2e/`、`scripts/`、`mvn8`
+- [ ] 暂存区不含 `.gitignore`（本地对它的改动不提交，提交时人工选文件）：`git diff --cached --quiet -- .gitignore` 返回 0
+- [ ] 代码、注释、JUnit 方法名和 `@DisplayName`、commit message 中不含设计书编号和本地资料路径：`git diff --cached | grep -nE 'BR-[0-9]|AC-[0-9]|Q-[0-9]|docs/|AGENTS|\.cursor|設計書|单体|単体テスト項目'` 无结果（误报逐条说明）
+- [ ] 需要追溯的地方改用业务语言描述（例：「同一会社・同一区分で色位置が重複しない」）
+
+大变更或 PR 前：额外 invoke `review-bugbot` / `review-security` skill；本机未安装时跳过，并在 RV 结果中注明「未インストールのため未実施」，安全项以§5 的人工检查代替。
+
+RV 结果**只记在本地的 `docs/{機能}/RV記録.md`**（模板：`docs/ai-native/RV記録_模板.md`；用 Cursor 还是用 bot 都一样），不贴进 PR 说明和 commit message。PR 说明只用业务语言写改动内容和测试结果，不提设计书编号、`docs/` 路径和 AI／bot 分工。

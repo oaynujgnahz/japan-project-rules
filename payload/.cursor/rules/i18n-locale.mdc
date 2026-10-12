@@ -1,0 +1,32 @@
+---
+description: CMPF 多语言翻译规范（ja / en）
+globs: "frontend/src/locale/**"
+alwaysApply: false
+---
+
+<!-- [CMPF] 整份为 CMPF 多语言要求：只维护 ja/en、zh 不维护、frontend/src/locale 路径、用語辞書_日英.md；将来由项目配置的语言列表和路径替换 -->
+# i18n / Locale
+
+## 必须遵守
+
+- 用户可见文案 **ja / en 双语同步**
+- `frontend/src/locale/zh/` 目录存在但 **不在维护范围**；新功能・改修 **不要** 追加或更新 zh 文案
+- 改前先搜 `frontend/src/locale/ja` 与 `en` 是否已有 key
+- 术语参照 `docs/ai-native/用語辞書_日英.md`，不得自造译名
+- 路由/API/locale 变更时一并检查 apis、view、router
+
+## UI 场景
+
+| 场景 | 日语 | 英语 |
+|------|------|------|
+| 按钮 | 短动词 | Save, Cancel |
+| 列头 | 名词短语 | Scope 1/2/3 保留 |
+| 错误 | です/ます 或系统体 | 完整句 + 原因 |
+| 单位 | tCO₂e | 不翻译化学式 |
+
+## 禁止
+
+- 排出量 / Emissions / Emission Volume 混用
+- 只改 ja 或只改 en
+- 为凑齐三语而去改 `locale/zh`
+- locale 外散落可见字符串

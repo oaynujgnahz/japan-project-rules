@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: "{機能名} API"
+  description: |
+    {機能} の API 契約。処理詳細は 07_API設計書/API-*.md を参照。
+    设计书目录：docs/{機能}/
+  version: 1.0.0
+
+servers:
+  - url: /api
+    description: CMPF carbonapi（经网关前缀按环境调整）
+
+tags:
+  - name: example
+    description: 示例 tag（替换为实际机能名）
+
+paths:
+  /example/resource:
+    post:
+      tags:
+        - example
+      summary: 示例 API（替换）
+      operationId: exampleOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExampleRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResExampleResponse'
+      security:
+        - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ResExampleResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        body:
+          $ref: '#/components/schemas/ExampleResponse'
+
+    ExampleRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 示例必填字段
+
+    ExampleResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64

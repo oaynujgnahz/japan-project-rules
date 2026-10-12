@@ -1,0 +1,84 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "単体テスト項目 cases.json",
+ "description": "gen_ut_xlsx.py の入力。人または Cursor が設計書（docs/{機能}/）から書く。正文は日文、画面文言・メッセージは原文のまま。",
+ "type": "object",
+ "required": ["meta", "layout", "operation", "check"],
+ "properties": {
+  "meta": {
+   "type": "object",
+   "required": ["feature"],
+   "properties": {
+    "feature": {"type": "string", "description": "機能名。既定の出力ファイル名 単体テスト項目_{feature}.xlsx に使う"},
+    "author": {"type": "string", "description": "項目総計!B1 作成者（空なら空欄のまま）"},
+    "created": {"type": "string", "description": "項目総計!D1 作成日 YYYY-MM-DD"},
+    "updater": {"type": "string", "description": "項目総計!B2 更新者"},
+    "updated": {"type": "string", "description": "項目総計!D2 更新日"},
+    "design_doc": {"type": "string", "description": "元にした設計書（メモ。xlsx には出ない）"},
+    "lang": {"enum": ["ja", "en", "zh"], "default": "ja", "description": "正文の言語。ja のとき簡体字混入を警告"}
+   }
+  },
+  "layout": {"type": "array", "description": "画面レイアウト判定：布局・显示・多语言", "items": {"$ref": "#/$defs/group_layout"}},
+  "operation": {"type": "array", "description": "画面操作処理判定：操作・API 流程・分支・权限・DB 結果・初期表示", "items": {"$ref": "#/$defs/group_operation"}},
+  "check": {"type": "array", "description": "項目チェック判定：输入校验・边界值・错误消息", "items": {"$ref": "#/$defs/group_check"}}
+ },
+ "$defs": {
+  "viewpoint": {"enum": ["画面レイアウト", "分岐網羅", "設定値", "データパターン", "境界値", "初期化チェック",
+    "ロールチェック", "NULL値チェック", "デグレ試験", "性能改善対応", "他システム連携IF", "例外処理の網羅",
+    "タイムアウト処理", "多言語対応チェック", "非同期処理チェック", "セッション・認証処理"],
+    "description": "B 列 試験観点。試験観点 sheet の 16 語のみ"},
+  "ref": {"type": "string", "description": "トレース用 ID。BR/AC を必ず、設計未定なら Q も。例 \"BR-xx / AC-xx\"。欠番 ID は使わない"},
+  "verify": {"enum": ["JUnit", "結合", "手動"], "description": "JUnit で覆うか、結合（联调）でしか確認できないか。xlsx には出ず trace-report に出る"},
+  "group_common": {
+   "type": "object",
+   "required": ["cases"],
+   "properties": {
+    "section": {"type": ["string", "null"], "description": "分組行。SCR/API 編号を入れる 例「【SCR-xxx 画面名】エリア」"},
+    "ref": {"$ref": "#/$defs/ref", "description": "グループ共通の ref（Case 側に無いとき使う）"}
+   }
+  },
+  "group_layout": {"allOf": [{"$ref": "#/$defs/group_common"}], "properties": {"cases": {"type": "array", "items": {
+   "type": "object", "required": ["viewpoint", "name", "type", "label"],
+   "properties": {
+    "viewpoint": {"$ref": "#/$defs/viewpoint"},
+    "name": {"type": "string", "description": "C 項目名"},
+    "type": {"enum": ["TT", "BTN", "LBL", "DRP", "TXT", "RBT", "CHK", "INP", "CMB", "TBL", "IB", "LNK"], "description": "D 表示タイプ"},
+    "label": {"type": "string", "description": "F ラベル表示内容（画面文言そのまま）"},
+    "font": {"type": "string", "default": "*", "description": "H フォント・サイズ・色"},
+    "max_len": {"type": "string", "default": "-", "description": "J 最大桁数"},
+    "required": {"type": "string", "default": "-", "description": "L 入力必須（○ / -）"},
+    "align": {"enum": ["左", "中", "右", "-"], "default": "左", "description": "N 詰め方"},
+    "format": {"type": "string", "default": "-", "description": "R フォーマット"},
+    "dtype": {"type": "string", "default": "-", "description": "T データタイプチェック"},
+    "note": {"type": "string", "default": "-", "description": "V 特記事項（判定できる内容）"},
+    "ref": {"$ref": "#/$defs/ref"}, "verify": {"$ref": "#/$defs/verify"}
+   }}}}},
+  "group_operation": {"allOf": [{"$ref": "#/$defs/group_common"}], "properties": {"cases": {"type": "array", "items": {
+   "type": "object", "required": ["viewpoint", "item", "step", "expected"],
+   "properties": {
+    "viewpoint": {"$ref": "#/$defs/viewpoint"},
+    "item": {"type": "string", "description": "C 試験項目"},
+    "step": {"type": "string", "description": "D 処理ステップ（操作）"},
+    "branch": {"type": "string", "default": "-", "description": "E 分岐（前提・条件）"},
+    "branch1": {"type": "string", "default": "-", "description": "F 分岐明細１"},
+    "branch2": {"type": "string", "default": "-", "description": "G 分岐明細２"},
+    "expected": {"type": "string", "description": "H 予想結果。画面表示・値・DB 結果を具体的に。「正常」「OK」「仕様通り」禁止"},
+    "ref": {"$ref": "#/$defs/ref"}, "verify": {"$ref": "#/$defs/verify"}
+   }}}}},
+  "group_check": {"allOf": [{"$ref": "#/$defs/group_common"}], "properties": {"cases": {"type": "array", "items": {
+   "type": "object", "required": ["viewpoint", "field", "screen", "branch1"],
+   "properties": {
+    "viewpoint": {"$ref": "#/$defs/viewpoint"},
+    "field": {"type": "string", "description": "C 項目名"},
+    "screen": {"type": "string", "description": "D 画面"},
+    "branch1": {"type": "string", "description": "E 分岐1（入力値・条件）"},
+    "branch2": {"type": "string", "default": "-", "description": "F 分岐2（code 展開時は 日本語 / 英語）"},
+    "expected": {"type": "string", "description": "G 予想結果。code を書く場合は省略可"},
+    "code": {"type": "string", "description": "メッセージコード（例 XXXX0000-E）。expected 省略時、locale から文言を引き ja 行＋en 行を自動生成"},
+    "param": {"type": "string", "description": "文言の {0} に入れる値（ja）"},
+    "param_en": {"type": "string", "description": "文言の {0} に入れる値（en）"},
+    "pair": {"type": "boolean", "default": true, "description": "false なら英語行を作らない"},
+    "ref": {"$ref": "#/$defs/ref"}, "verify": {"$ref": "#/$defs/verify"}
+   }}}}}
+ }
+}

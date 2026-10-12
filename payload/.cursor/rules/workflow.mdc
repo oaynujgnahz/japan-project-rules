@@ -1,0 +1,87 @@
+---
+description: AI Native 开发流程、阶段门禁、Agent 编排与环节 Skill/MCP 强制要求
+alwaysApply: true
+---
+
+# Workflow & Agent 编排
+
+## 开发阶段（未满足则 Stop，不得进入下一阶段）
+
+<!-- [CMPF] 阶段表中单元测试的 ./mvn8 命令属 CMPF；将来由项目配置的 BUILD_CMD 替换 -->
+| 阶段 | 进入条件 | Stop Condition |
+|------|----------|----------------|
+| **理解现状** | 输出既存逻辑摘要（主键、校验、类似功能路径） | 未读代码就开始写业务 |
+| **写设计书** | `docs/{機能}/README.md` + `単体テスト項目_{機能}.xlsx` 存在或已创建 | 无设计书目录/单体 Case 即实装 |
+| **设计评审** | Review checklist 无 blocker | 有未解决差异仍实装 |
+| **功能开发** | 设计评审通过 | — |
+| **功能开发（文档）** | 实装逻辑已写入对应 `06`/`07`/`詳細設計書`/`验收标准`（见 `design-docs.mdc` §开发时设计留存） | 仅代码无设计节 |
+| **实现评审** | 设计书 ↔ 代码比对完成 | 未做 RV 即宣称完成 |
+| **单元测试** | `./mvn8 ... -DskipTests=false` 或 build 通过 | 测试红/未跑 |
+| **联调验收** | 影响范围内 E2E/smoke 或人工 case | 关键画面零验证 |
+
+**新功能 / 改业务逻辑**：理解现状 → 写设计书 → 设计评审 → 功能开发 → …  
+<!-- [CMPF] 画面改修插入 PPT vs 现状差异表、06_画面設計書，属 CMPF 需求交付方式（PPT） -->
+**画面改修**：在通用流程前插入 **PPT vs 现状差异表**（`ppt-first-ui.mdc`）→ 同步 `06_画面設計書` → 设计评审 → …  
+**PPT 再验证且承认理解错误**：见 `ppt-first-ui.mdc` §理解纠错 Gate — 纠错摘要先写在回复里；仅是设计书写错、不改变 BR / AC / 画面事件 / API 契约 → 可直接先改设计书再改代码；涉及上述任一项变更 → 先列为要確認事項（Q），用户或需求方确认后再改设计书和代码。改设计书时删除/替换错误内容，不保留。  
+**纯 bugfix / 用户指定跳过**：可简化为 理解现状 → 功能开发 → 实现评审 → 单元测试。
+- 不改变业务规则（BR / AC / 画面事件 / API 契约 / 错误消息）的 bugfix：设计书可不更新，RV 注明 `設計書: N/A（業務ルール変更なし）`
+- 改变了上述任一项：不适用简化流程中「跳过设计书」，须同步更新 `docs/{機能}/`（`design-docs.mdc` §开发时设计留存）
+
+## 文档模板（写设计书 / 单元测试 / 联调验收 必用）
+
+<!-- [CMPF] 模板路径（docs/ai-native/…、e2e/tests/）属 CMPF；将来由项目配置的模板路径替换 -->
+| 阶段 | 模板 |
+|------|------|
+| 写设计书 | `docs/ai-native/設計書模板/`（機能 README・詳細設計・06/07/openapi） |
+| 写设计书 | `docs/ai-native/验收标准_模板.md` → 存入 `docs/{機能}/` |
+| 写设计书/单元测试 | `docs/ai-native/単体テスト項目_テンプレート.xlsx` → `docs/{機能}/単体テスト項目_{機能}.xlsx` |
+| 单元测试 | `docs/ai-native/回归テスト矩阵_模板.md` |
+| 联调验收 | `docs/ai-native/結合テスト大纲_模板.md` + `e2e/tests/` |
+| PR | `.github/pull_request_template.md` |
+
+## Agent 角色（Cursor 分阶段 prompt 或 Subagent）
+
+| 角色 | 职责 | 改代码 | Stop |
+|------|------|--------|------|
+| Orchestrator | 拆任务、选 Skill、汇总 | 否 | 子任务完成 |
+| Feature | Java/Vue/SQL/locale | 是 | 单元测试命令绿 |
+| Review | 设计书/既存逻辑/安全 | 否 | findings 已处理 |
+| Test | JUnit、回归矩阵、E2E | 测试代码 | 测试绿 |
+| Debug | root cause、最小修复 | 最小 | 复现消失 |
+| Docs | 設計書、PR 描述 | 文档 | 与 diff 一致；**实装细节写入 06/07/验收标准** |
+
+## 环节 × 必用 Skill / MCP
+
+<!-- [CMPF] cmpf-report-file-io、PostgreSQL MCP、e2e/ 属 CMPF 专属 -->
+| 环节 | 必用 | 禁止 |
+|------|------|------|
+| 要件/设计 | `md-design-doc`、`brainstorming` | 无 docs 输出 |
+| 功能开发 | 同步更新 `docs/{機能}/` 画面·API·验收（`design-docs.mdc` §开发时设计留存） | 代码与设计脱节 |
+| 理解现状 | Grep / SemanticSearch / `explore`；画面改修加 `ppt-first-ui.mdc` | 猜测业务 |
+| 文件 I/O | `cmpf-report-file-io` | 自造下载/取込逻辑 |
+| 实现后评审 | `.cursor/rules/review.mdc` checklist | 跳过比对 |
+| Code Review | `review-bugbot`（大变更） | — |
+| Security | `review-security`（auth/SQL/配置） | — |
+| 单元测试 | `verification-before-completion` | skipTests 默认即完成 |
+| 联调验收 | `cursor-ide-browser` 或 Playwright MCP + `e2e/` | 仅 MagicPod 无脚本 |
+| DB 确认 | PostgreSQL MCP（只读，见 `MCP_Setup.md`） | 臆造表结构 |
+| CI | `ci-investigator` + `gh` | — |
+
+Skills 团队安装：`docs/ai-native/skills/README.md`。
+
+MCP 启用：复制 `.cursor/mcp.json.example` → `.cursor/mcp.json`（本地，勿提交密钥）。
+
+## 上下文工程
+
+- 代码变更 → 同步 `docs/{機能}/` 设计书
+- 功能设计文档生成/行为修改 → 同步生成/更新 `単体テスト項目_{機能}.xlsx`（见 `unit-test-case-docs.mdc`）
+- 新功能无 MD → 先建目录（见 `仕様MD化_バックログ.md` 优先级）
+- 复盘问题 → 以 diff 形式**提议**更新 `.cursor/rules/` 或 `docs/ai-native/`，用户同意后再写入（多 Agent 协作，禁止自行改规则文件）
+- 规则文件与 `docs/` 为本地专用，不提交（见 `AGENTS.md` §本地专用）
+
+## 代码样例索引（功能开发前必读同类）
+
+<!-- [CMPF] 代码样例和设计书范例路径均为 CMPF -->
+- JUnit/Excel/PPT：`carbonapi/src/test/java/.../excel/`、`.../report/`
+- 设计书范例：`docs/PCF算定_Excel取込/`、`docs/报告出力_排出量PPT/`
+- E2E 范例：`e2e/tests/`

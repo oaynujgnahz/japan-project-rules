@@ -1,0 +1,72 @@
+---
+description: CMPF 项目总览、命令、全局编码原则与任务收尾
+alwaysApply: true
+---
+
+# CMPF Core
+
+> 流程：`workflow.mdc` · RV：`review.mdc` · 画面改修：`ppt-first-ui.mdc`（硬规则见下 §画面改修 Gate）  
+> 文档：`docs/ai-native/README.md` · `AGENTS.md`
+
+<!-- [CMPF] 本节整节为 CMPF 技术栈、Maven 模块和目录路径；将来由项目配置替换 -->
+## Project
+
+Java 8 / Spring Boot 2.5.14 + Vue 3 + TS + Vite。Maven：`carbon-parent`（`./mvn8`）。  
+模块：`common` · `carbonapi` · `taskapi` · `userapi` · `message` · `frontend` · `report`。
+
+路径：Java `com.ntt.cmpf.*` · mapper/SQL `resources/mapper/` · 前端 `frontend/src/{apis,views,router,store,locale}` · 设计书 `docs/{機能}/`。
+
+<!-- [CMPF] 本节整节为 CMPF 构建命令（./mvn8、frontend npm、Node v16.14.0、naive-ui patch）；将来由项目配置的 BUILD_CMD 替换 -->
+## Commands
+
+```bash
+./mvn8 -pl <module> -am test -DskipTests=false   # 默认 skipTests=true
+cd frontend && npm run build
+```
+
+Node v16.14.0 · 保留 `frontend/patches/naive-ui+2.35.0.patch`。
+
+## Coding（全局）
+
+<!-- [CMPF] Java 8 only 属 CMPF 技术栈；注释日/英、禁止中文注释为对日项目要求 -->
+- 先读既存，minimal diff；Java 8 only；不擅自升级依赖
+- 注释日/英，解释 **why**；禁止中文注释
+- 新类按业务域命名；勿滥用 `Ghg` 等宽泛前缀
+- 不编辑生成/模板文件（除非任务要求）；新生产依赖需用户同意
+
+## 禁止
+
+<!-- [CMPF] manifests/prd、manifests/mieco-prd 为 CMPF 部署环境 -->
+- 改 `manifests/prd`、`manifests/mieco-prd`（除非明确要求）
+- 提交密钥/真实凭证；盲目重写；覆盖无关未提交改动；Java 9+ 语法
+
+## Agent
+
+- 默认中文回复
+<!-- [CMPF] cmpf-report-file-io skill 为 CMPF 专属 -->
+- 文件 I/O → `cmpf-report-file-io` skill（`install.sh` 安装到 `~/.cursor/skills/`；没有则读既存实现并注明，见 `docs/ai-native/skills/README.md`）
+- 設計書 → `md-design-doc`；新功能在「写设计书」阶段填 `验收标准_模板.md`
+<!-- [CMPF] 06_画面設計書 / 07_API設計書 目录结构属 CMPF 设计书模板 -->
+- **开发时**：实装逻辑须同步写入对应 `06_画面設計書` / `07_API設計書` / `詳細設計書` / `验收标准`（`design-docs.mdc` §开发时设计留存）
+<!-- [CMPF] 用語辞書_日英.md、只同步 ja/en（zh 不维护）属 CMPF 多语言要求；将来由项目配置的语言列表替换 -->
+- locale → `用語辞書_日英.md`，**ja/en 同步**（`locale/zh` 不维护）
+- 验证通过后再宣称完成
+
+<!-- [CMPF] 画面改修 Gate 以 PPT 为准、06_画面設計書，属 CMPF 需求交付方式（PPT）；将来由项目配置决定是否启用 -->
+### 画面改修 Gate（硬规则 · 唯一摘要）
+
+布局/控件/列变更时：
+
+1. 用户提供 **PPT/截图** → 必须先输出 **PPT vs 现状差异表**，再写 UI 代码
+2. `docs/{機能}/` 与 PPT **冲突** → **Stop**，提示更新 `06_画面設計書` 后再实装
+3. **不得**仅凭旧代码或 MD 推断 UI 布局（旧代码仅作业务逻辑参照）
+4. **PPT 再验证且承认理解错误** → 纠错说明写在**回复**里；仅是设计书写错、不改变 BR / AC / 画面事件 / API 契约 → 可直接先改设计书再改代码；涉及上述任一项变更 → 先列为要確認事項（Q），用户或需求方确认后再改设计书和代码（见 `ppt-first-ui.mdc` §理解纠错 Gate）
+
+差异表模板、PR 拆分、设计书格式 → **`ppt-first-ui.mdc`**
+
+## Before Finishing
+
+1. 输出 `review.mdc` checklist（有 blocker 不得结束）
+2. 「单元测试」阶段填 `回归テスト矩阵_模板.md`，留存于本地 `docs/{機能}/`（不贴进甲方 PR），并确认 单体 Case（`単体テスト項目_{機能}.xlsx`）同步
+3. 确认 `docs/{機能}/` 已反映本次实装（画面 §実装詳細 / API 流程 / AC-*）；未更新不得宣称完成
+4. 清理 unused 代码；汇总变更与验证结果（pass/fail/未运行）

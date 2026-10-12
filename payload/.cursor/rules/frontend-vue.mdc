@@ -1,0 +1,83 @@
+---
+description: CMPF Vue 3 + TypeScript + Naive UI 前端规范
+globs: "frontend/**/*.{vue,ts,tsx}"
+alwaysApply: false
+---
+
+<!-- [CMPF] 整份为 CMPF 前端技术栈（Vue 3 + Naive UI + vue-i18n + Pinia + ECharts）专属；将来移到技术栈配置 -->
+# Frontend Rules
+
+## 技术栈
+
+- Vue 3 Composition API（`<script setup>` 或 `defineComponent`）
+- Naive UI、vue-i18n、Pinia、ECharts、TypeScript、Vite
+- API：`frontend/src/apis/`；Views：`frontend/src/views/`
+- Router：`router/index.ts`、`routes-new.ts`、`routes-classic.ts` 保持一致
+- Stores：`frontend/src/store/`
+
+## 实装顺序
+
+0. **画面改修**（列/按钮/布局变更）：`ppt-first-ui.mdc`（硬规则见 `cmpf-core.mdc` §画面改修 Gate）
+1. 查 `frontend/src/components/` 与 `hook/LocalNaiveUI.ts` 是否已有通用组件
+2. 无则新规组件追加到 `components/` 后再引用（见 `docs/ai-native/UI規範.md`）
+<!-- [CMPF] ja/en 同步、locale/zh 不维护属 CMPF 多语言要求 -->
+3. 可见文案 `$t()` / `useI18n()`；**ja / en 同步**（`locale/zh` 不维护）
+
+## 优先复用组件
+
+| 用途 | 路径 |
+|------|------|
+| 确认框 | `useConfirm()` in `hook/LocalNaiveUI.ts` |
+| 表格按钮 | `TableButton()` |
+| 数字输入 | `LocalInputNumber`、`LocalInputDecimal`、`LocalNumber` |
+| 远程下拉 | `RemoteSelect` |
+| Modal | `components/Modal/MyModal.vue` |
+| 图表 | `components/Charts/*` |
+
+## 布局
+
+- 列表：`n-card` + 检索 + `n-data-table`；操作列右固定
+- 按钮：取消左、确定/保存右；权限用 `Authority()` / `ACCESS_R_*`
+<!-- [CMPF] classic / new 双 UI 是 CMPF 特有的两套路由 -->
+- classic / new 双 UI 均需确认（如适用）
+- 操作列 icon：优先 `@vicons/fluent` + `NButton` `circle` `size="small"`（与邻近画面一致）
+
+## 依赖字段リセット（表形式画面の必須チェック）
+
+<!-- [CMPF] 示例字段为 CMPF 的 PCF Step2 画面；残值排查原则本身通用 -->
+行データに「他の選択項目に依存する隠しフィールド」がある画面（例：PCF Step2 の `emissionCalcMethod` / `weight` / `milage` / `fuelConsumption`）では、残値が別のエラーコードとして現れ、ユーザーが画面上で消せない不具合になりやすい。
+
+- **依存フィールドを追加・変更するときは、その前提を変える全入口を列挙してから実装する**
+- 入口の例：親項目の select 変更 / クリア、方式・区分の切替、モーダル回写、一括反映、複製、DB 読込、新規作成後の回填
+- リセット処理は 1 箇所（例：`activityItemDependentFieldReset()`）に集約し、各入口から呼ぶ。入口ごとに条件を書き分けない
+- マスタから引き当てる値は、リセット後に上書きする順序を保つ（リセット → meta 反映）
+- 引き当て不能時のフォールバックを用意する。クリアしただけで放置すると「必須未設定」エラーに化ける
+- picker / option ノードは欠損キーを作らず `null` を明示する（`undefined` と「引けなかった」が混ざる）
+
+### 残値バグの修正手順（Stop Condition）
+
+同種バグを 1 件修正するときは、**報告された入口だけ直して終わらせない**。
+
+1. 対象フィールドの **全書き込み箇所**と**全リセット箇所**を Grep で列挙し、回答に一覧を出す
+2. 各入口について「リセット漏れ有無」を判定（漏れなしなら理由を明記）
+3. 漏れている入口は同一タスク内で修正する
+4. 検証は「報告された再現手順」＋「一覧で漏れが見つかった入口」の両方
+
+## 异常与边界
+
+- API 失败：`useMessage` / `useConfirm().error` 展示；禁止 silent fail
+- 空列表、loading、权限不足：与邻近画面同一模式
+- 表单：Naive 规则校验 + 服务端错误 message 映射 locale
+- 网络/超时：用户可理解的 `$t()` 文案
+
+## 注释
+
+<!-- [CMPF] classic/new 差异属 CMPF；注释写日语/英语为对日项目要求 -->
+- 非显而易见的状态机、权限分支、classic/new 差异 → 简短日语/英语说明 **why**
+
+## 禁止
+
+- 硬编码 UI 字符串（locale 外）
+<!-- [CMPF] routes-new / routes-classic、naive-ui patch 属 CMPF 前端 -->
+- 只改 `routes-new` 漏 `routes-classic`
+- 移除或绕过 `patch-package` / naive-ui patch
