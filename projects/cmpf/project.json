@@ -73,7 +73,7 @@
     ],
     "error_code": "CMPF\\d{4}-[EIW]"
   },
-  "ledger_dir": "/home/box/cmpf-ledger",
+  "ledger_dir": "",
   "design": {
     "_doc": {
       "system_name": "表紙・各 sheet 页眉的システム名。gen_design_xlsx.py 的 meta.system 取这个值；没填时脚本报错，不再默认 CMPF",
