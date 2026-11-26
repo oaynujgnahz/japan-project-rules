@@ -7,7 +7,7 @@ description: >-
 
 # 単体テスト項目（单体 Case）Excel 生成
 
-项目专属值读 `projects/<project>/project.json`，按节取值，不要把这些值写进本文件，也不要写死在命令里：
+项目专属值读 init.sh 生成的本地 project.json（脚本用 `--config` 指定；`projects/cmpf/project.json` 只是只读示例，不能直接用），按节取值，不要把这些值写进本文件，也不要写死在命令里：
 - `unit_test`：模板路径、locale 文件名候选、試験観点、表示タイプ、样式与 sheet 位置、正文语言、错误文言格式、台账文件名模式、追溯 ID 正则
 - `i18n`：locale 目录、语言
 - `ids.error_code`：错误码格式；`ids.prefixes`：追溯 ID 前缀

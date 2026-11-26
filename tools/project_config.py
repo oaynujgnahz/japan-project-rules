@@ -26,10 +26,10 @@ MISSING = object()
 # 各工具需要的键。末尾带 ? 的只要求存在（可以是空串/空列表），其余必须非空。
 COMMON_KEYS = ["name", "ids.error_code", "i18n.locale_dir", "i18n.languages"]
 NEEDS = {
-    "design": COMMON_KEYS + ["design.system_name", "design.doc_no_format", "design.author?"],
+    "design": COMMON_KEYS + ["design.system_name", "design.doc_no_format", "design.author?", "ids.screen_id", "ids.api_id"],
     "read_design": COMMON_KEYS + ["ids.screen_id", "ids.api_id"],
     "unit_test": COMMON_KEYS + ["ids.screen_id", "ids.api_id", "unit_test.locale_files.{lang}",
-                                "unit_test.error_message_templates.{lang}", "unit_test.language_labels.{lang}"],
+                                "unit_test.error_message_templates.{lang}", "unit_test.language_labels.{lang}", "unit_test.trace_id_regex"],
     "install": ["name", "detect.file", "detect.contains?", "local_only", "executable?", "env_checks?"],
 }
 

@@ -2,11 +2,11 @@
 name: design-doc-xlsx
 description: >-
   根据要件 PPT + 项目现有代码，按设计书规范生成日式 Excel
-  詳細設計書（.xlsx）和对外公司模板设计书时使用（多项目共用，项目差异取自 projects/{项目}/project.json）。
+  詳細設計書（.xlsx）和对外公司模板设计书时使用（多项目共用，项目差异取自 init.sh 生成的本地 project.json）。
 ---
 # 設計書 Excel 生成（多项目共用）
 
-工具目录：规则仓库的 `tools/design-xlsx/`（下面的脚本路径都相对于它）；项目差异：`projects/{项目}/project.json`
+工具目录：规则仓库的 `tools/design-xlsx/`（下面的脚本路径都相对于它）；项目差异：init.sh 生成的本地 project.json（脚本用 `--config` 指定；`projects/cmpf/project.json` 只是只读示例，不能直接用）
 - `RULES.md`：从仓库规范提炼的完整规则（**先读**）
 - `read_pptx.py`：PPT → slides.md + 图片 + 嵌入文件
 - `gen_design_xlsx.py`：JSON → xlsx（含 lint）；`--schema` 打印 JSON 骨架；`--blank --config <项目配置>` 生成空模板；`--config` 必填，`meta.system` 取配置的 `design.system_name`（design.json 里写了不同的值会报错）
@@ -21,19 +21,22 @@ description: >-
 | 确认事项台账目录 | `ledger_dir` | 按项目配置 |
 | 系统名 | `design.system_name` | `CMPF` |
 | 错误码格式 | `ids.error_code` | `CMPF\d{4}-[EIW]` |
+| 画面 ID 规则 | `ids.screen_id` | `SCR-[A-Za-z0-9][\w-]*[A-Za-z0-9]` |
+| API ID 规则 | `ids.api_id` | `API-[A-Za-z0-9][\w-]*[A-Za-z0-9]` |
+| 语言 | `i18n.languages` | `ja`, `en` |
 | locale 目录 | `i18n.locale_dir` | `frontend/src/locale` |
 | 术语辞书 | `design.glossary` | `docs/ai-native/用語辞書_日英.md` |
 配置里没有的值先读代码确认；还不明就写进要確認事項，不照 CMPF 猜、不自己编。
 
 ## 核心规则（详见 RULES.md）
-1. 一功能一套：表紙→改訂履歴→目次→機能概要→要件対応表→現状分析→処理フロー→業務ルール→画面一覧→SCR-*（每画面一张）→API一覧→API-*（每 API 一张）→テーブル定義→チェック・エラー一覧→SQL一覧→受入基準→要確認事項→実装対照。
+1. 一功能一套：表紙→改訂履歴→目次→機能概要→要件対応表→現状分析→処理フロー→業務ルール→画面一覧→各画面（每画面一张，sheet 名＝画面 ID）→API一覧→各 API（每 API 一张，sheet 名＝API ID）→テーブル定義→チェック・エラー一覧→SQL一覧→受入基準→要確認事項→実装対照。
 2. 主文用业务语言；函数名/变量名/文件路径只能出现在「実装対照」和「現状分析」。可以出现：API path、请求响应字段、DB 表列、画面物理名、组件类型、错误码、权限常量。
 3. 每个处理场景固定块：目的→トリガー→入力→処理（编号步骤）→出力→境界・例外（+関連 BR/AC/API/slide）。
 4. PPT 是画面布局的第一来源；每个 SCR 写「要件来源（PPT 文件 + slide/注釈）」；改修画面必须有 PPT vs 現状 差异表；不能从旧代码推断布局。
 5. 每条设计可追溯：要件対応表 把 slide/注釈 → 设计 ID → 既存代码 → 状态（✅/⏳/△）对起来。PPT 没写但必须定的，写「slide X を設計で具体化」。
 6. PPT 与代码冲突、PPT 不明确 → 不编造，写 要確認事項（问题/选项/影响/暂定方针/状态），设计按暂定方针写并标 Q 编号（只在内部詳細設計書和 MD 里）。
-7. ID：SCR-B-xx-xx-xx、API-B-xx-xx-xx-xx、BR-xx、AC-xx、BL-xx、SQL-xx、F-xx、Q-x；错误码按 `ids.error_code`（含 -E/-I/-W），文言取代码 locale/ja。BR/AC/Q 编号不复用，删除的标「欠番」。
-8. 受入基準每条可测试；i18n 只写 ja/en；术语按项目术语辞书。
+7. ID：画面按 `ids.screen_id`（CMPF 例：SCR-B-xx-xx-xx）、API 按 `ids.api_id`（CMPF 例：API-B-xx-xx-xx-xx）、BR-xx、AC-xx、BL-xx、SQL-xx、F-xx、Q-x；错误码按 `ids.error_code`（含 -E/-I/-W），文言取代码 locale 里正文语言（`i18n.languages` 第一个，CMPF 例：ja）的文件。BR/AC/Q 编号不复用，删除的标「欠番」。
+8. 受入基準每条可测试；i18n 按 `i18n.languages` 写（CMPF 例：ja/en），画面 sheet 的文言列也按它生成；术语按项目术语辞书。
 9. 语言：sheet 名/表头/ID 日文；正文默认日文（用户要求可中文）；PPT 原文、错误 message、UI 文言不翻译。
 
 ## 确认事项台账
@@ -49,7 +52,7 @@ description: >-
 ## 步骤
 1. **收集输入**：PPT（用户提供的文件）、功能名、仓库（见项目参数）。代码只读，绝不改用户电脑上的文件。
 2. **读 PPT**：`python3 read_pptx.py <pptx> -o <工作目录>/<機能>/ppt --render`，读 slides.md（文本框按位置排序、group 递归、表格转 Markdown、notes、①②注釈）；**一定要看 media/ 和 render/ 里的图**（UI 草图、Excel 格式截图都在图里）；embedded/ 里可能有 xlsx。
-3. **读代码（理解现状，先做）**：只读执行 `rg`/`git log`/`cat`：同类后端入口（Controller/Service/Mapper/SQL）、前端画面与 API 调用、router、locale（ja/en）。也看 `docs/{機能}/` 是否已有 MD 设计书（有就以它为基础，冲突以 PPT 为准）。不要读 `.cursor/mcp.json`、`application-*.yml` 等含密钥文件；不要运行或输出 `git remote -v`（URL 里可能含 token）。
+3. **读代码（理解现状，先做）**：只读执行 `rg`/`git log`/`cat`：同类后端入口（Controller/Service/Mapper/SQL）、前端画面与 API 调用、router、locale（`i18n.languages` 的各语言）。也看 `docs/{機能}/` 是否已有 MD 设计书（有就以它为基础，冲突以 PPT 为准）。不要读 `.cursor/mcp.json`、`application-*.yml` 等含密钥文件；不要运行或输出 `git remote -v`（URL 里可能含 token）。
 4. **查台账**，再写中文 MD 草稿给用户确认。
 5. **写 JSON**：`python3 gen_design_xlsx.py --schema` 看骨架，参照 example/ 的脱敏样例。表格行可以用 list 或以表头为 key 的 dict；处理步骤给 list 自动编号。先填 現状分析、要件対応表，再写 処理フロー/画面/API，最后 チェック・受入基準・要確認事項・実装対照。
 6. **生成 + lint**：`python3 gen_design_xlsx.py design.json --config <项目配置> -o <工作目录>/<機能>/<機能>_設計書.xlsx`。逐条处理 lint 警告（函数名混入主文、流程块缺项、SCR 缺 PPT 来源、改修缺差异表、API 缺 BL、ID 格式、要確認缺状态、无 AC）。对外公司模板 xlsx 用导出工具生成，并确认没有 Q 编号、路径、行号、agent 名。

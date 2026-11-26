@@ -63,8 +63,8 @@ VAGUE = {"正常", "正常に動作する", "正常終了", "正しく動作す�
 ZH_ONLY = set("这们为没时后对个说么样还过从让发录删页确认击选择据项请显隐设输键钮创该页时间应")
 # メッセージコードの書式は項目配置 ids.error_code（configure() で設定）。Locale 読取・言語別展開・言語行チェックで共用
 CODE_RE: "re.Pattern" = None  # type: ignore[assignment]
-# [CMPF] ID 写法：BR-/AC-/Q- 是 CMPF 设计书的编号约定；将来 ID 规则只在 project.json 定义一份，设计书和单体 case 两个工具共读
-TRACE_RE = re.compile(r"(?<![\w-])(?:BR|AC|Q)-(?:[A-Z]{1,6}-)?\d{1,3}(?![\w-])")
+# 追溯 ID（BR/AC/Q）の書式は項目配置 unit_test.trace_id_regex（configure() で設定）
+TRACE_RE: "re.Pattern" = None  # type: ignore[assignment]
 ANY_ID_RE = re.compile(r"(?<![\w-])[A-Z]{1,4}-[\w-]*\d(?![\w-])")
 VERIFY_VALUES = {"JUnit", "結合", "手動"}
 FUNC_RE = re.compile(r"\b[a-z]+[A-Z][A-Za-z0-9]*\s*\(|\b\w+\.(java|vue|ts|tsx|xml)\b|src/main/|src/views/")
@@ -755,11 +755,12 @@ def _resolve_locale(arg: Optional[str]) -> Optional[Path]:
 
 
 def configure(cfg: dict) -> None:
-    global CODE_RE
+    global CODE_RE, TRACE_RE
     CFG.clear()
     CFG.update(cfg)
     LANGS[:] = list(cfg["i18n"]["languages"])
     CODE_RE = re.compile(rf"(?<![\w-])(?:{cfg['ids']['error_code']})(?![\w-])")
+    TRACE_RE = re.compile(cfg["unit_test"]["trace_id_regex"])
 
 
 def main():

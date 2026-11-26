@@ -661,7 +661,9 @@ FUNC_RE = re.compile(r"\b[a-z][a-z0-9]+(?:[A-Z][a-z0-9]+){1,}\b(?:\(\))?|\b\w+\.
 MAIN_TEXT_SHEETS = ("処理フロー", "業務ルール", "受入基準")
 
 
-def lint(data):
+def lint(data, cfg):
+    # 画面 / API の ID 規則は項目配置（init.sh で確認した ids.screen_id / ids.api_id）
+    scr_re, api_re = re.compile(cfg["ids"]["screen_id"]), re.compile(cfg["ids"]["api_id"])
     w = []
     m = data.get("meta", {})
     for k in ("feature", "doc_no", "version", "created", "requirement"):
@@ -686,11 +688,11 @@ def lint(data):
             if isinstance(d, dict):
                 for k in ("目的", "トリガー", "処理", "出力", "境界・例外"):
                     scan(f"{s.get('id')} 実装詳細.{k}", d.get(k))
-        if s.get("id") and not re.match(r"^SCR-", str(s.get("id"))):
-            w.append(f"[ID] 画面ID '{s.get('id')}' は SCR- で始めること")
+        if s.get("id") and not scr_re.fullmatch(str(s.get("id"))):
+            w.append(f"[ID] 画面ID '{s.get('id')}' が画面 ID 規則（ids.screen_id: {scr_re.pattern}）に合わない")
     for a in data.get("apis", []):
-        if a.get("id") and not re.match(r"^API-", str(a.get("id"))):
-            w.append(f"[ID] API ID '{a.get('id')}' は API- で始めること")
+        if a.get("id") and not api_re.fullmatch(str(a.get("id"))):
+            w.append(f"[ID] API ID '{a.get('id')}' が API ID 規則（ids.api_id: {api_re.pattern}）に合わない")
         if not a.get("logic"):
             w.append(f"[API] {a.get('id')}: ビジネスロジック(BL)が空（『Service参照』だけは不可）")
     for i, t in enumerate(data.get("traceability", []), 1):
@@ -725,7 +727,12 @@ def load(path):
 def _project_config(path):
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     import project_config  # tools/project_config.py
-    return project_config.load(path, "design")
+    cfg = project_config.load(path, "design")
+    # 画面 sheet「文言（i18n）」の言語列は i18n.languages に合わせる
+    for i, sec in enumerate(SCREEN_SECTIONS):
+        if sec[0] == "i18n":
+            SCREEN_SECTIONS[i] = (sec[0], sec[1], C(("キー", 40), *[(l, 36) for l in cfg["i18n"]["languages"]]))
+    return cfg
 
 
 def apply_config(data, cfg):
@@ -768,7 +775,7 @@ def main():
     wb.save(out)
     print(f"saved: {out}  sheets={wb.sheetnames}")
     if not a.blank and not a.no_lint:
-        ws = lint(data)
+        ws = lint(data, cfg)
         print(f"lint: {len(ws)} warning(s)")
         for x in ws:
             print("  - " + x)
