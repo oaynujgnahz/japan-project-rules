@@ -49,7 +49,60 @@ PAYLOAD_PLACEHOLDERS = {
     "build_wrapper": "payload.build_wrapper?",        # payload/{{build_wrapper}}（Java 8 用 Maven 包装脚本）装成的文件名；空=不装
     "error_code_prefix": "payload.error_code_prefix",  # 错误码前缀（文档里的例子 XXXX0073-E）
     "error_code": "ids.error_code",                   # 错误码正则
+    "java_version": "stack.java_version",             # Java 版本（如 8、17）；init 取 pom.xml 的 java.version 等
+    "spring_boot_version": "stack.spring_boot_version",  # Spring Boot 版本（如 2.5.14）；init 取 pom.xml 的 parent 等
 }
+# stack / deploy から作る派生占位符
+DERIVED_PLACEHOLDERS = {
+    "java_next_version": "java_version + 1（「Java 9+ 语法」禁止用）",
+    "spring_boot_series": "spring_boot_version の major.minor + .x（如 2.5.x）",
+    "prod_manifests_slash": "deploy.prod_manifests「a / b」",
+    "prod_manifests_code_ja": "「`a`、`b`」",
+    "prod_manifests_code_en": "「`a`, `b`」",
+    "prod_manifest_paths": "「manifests/a、manifests/b」",
+    "prod_manifest_paths_code_ja": "「`manifests/a`、`manifests/b`」",
+    "prod_manifest_paths_code_slash": "「`manifests/a` / `manifests/b`」",
+    "manifest_envs_brace": "deploy.manifest_envs「{a,b,c}」（1 个时不带括号）",
+}
+# examples（顶层，必需）：项目专属的范例文本。payload の {{ex_<id>}} が examples.<id> になる。
+# 值是 Markdown 片段（可含其他 {{占位符}}）。id 分两种：
+#   inline（EXAMPLE_INLINE_IDS）：嵌在表格行/句子里，空串 → 渲染成「—」，行保留
+#   block（其余）：独占一行（可多行），空串 → 那一行不装
+# 下面每个 id 都必须有（没有就报错），多余的 id 也报错（防拼错）。
+EXAMPLE_IDS = {
+    "feature_name": "[inline] orchestrator.md 参数表 {機能} 的例子（含反引号）",
+    "feature_docs": "[inline] orchestrator.md 参数表 {docs路径} 的例子（含反引号）",
+    "feature_ppt": "[inline] orchestrator.md 参数表 {PPT路径} 的例子（含反引号）",
+    "scope_example": "[inline] orchestrator.md 参数表 {范围} 的例子（含反引号）",
+    "walkthrough": "orchestrator.md 的范例功能一节（整节，末尾带空行）",
+    "design_docs_reference": "design-docs.mdc 末尾「参考」一节（范例设计书）",
+    "workflow_design_reference": "workflow.mdc 代码样例索引里的设计书范例行",
+    "screen_doc_reference": "ppt-first-ui.mdc 的画面设计书范例（注释＋一行）",
+    "readme_design_reference": "docs/ai-native/README.md 末尾「设计书范例」一节",
+    "skills_design_reference": "docs/ai-native/skills/README.md 的设计书范例行",
+    "template_design_reference": "設計書模板/README.md 的本仓库范例行",
+    "spec_reference": "[inline] 設計書記述規範.md 表头「范例」行的链接",
+    "spec_migration_reference": "設計書記述規範.md 末尾的已迁移范例",
+    "field_example": "[inline] 設計書記述規範.md 请求/响应字段的例子（含反引号）",
+    "db_example": "[inline] 設計書記述規範.md DB 表/列的例子（含反引号）",
+    "screen_field_example": "[inline] 設計書記述規範.md 画面物理名的例子（含反引号）",
+    "file_path_example": "[inline] 設計書記述規範.md 文件路径的例子（含反引号）",
+    "permission_example": "[inline] 設計書記述規範.md 权限常量的例子（含反引号）",
+    "menu_path_example": "[inline] README_機能索引_模板.md 菜单路径的例子（已在反引号里）",
+    "dependent_field_example": "frontend-vue.mdc 依存字段リセット的范例段落（注释＋一段，末尾带空行）",
+    "domain_term": "[inline] java-backend.mdc / AGENTS.md 注释里的业务术语例",
+    "business_terms_rule_ja": "java-backend.mdc 保留日语业务术语的一行",
+    "business_terms_rule_en": "AGENTS.md 保留日语业务术语的一行（英文）",
+    "report_test_reference": "java-backend.mdc 测试一节的参照测试类一行",
+    "backlog_rows": "仕様MD化_バックログ.md 一覧表的数据行",
+    "glossary_core": "用語辞書_日英.md「核心概念」一节（标题＋表，末尾带空行）",
+    "glossary_proper_nouns": "用語辞書_日英.md 维护规则第 3 条（固有名）",
+    "glossary_reference": "用語辞書_日英.md 参照文件里的范例设计书行",
+}
+EXAMPLE_INLINE_IDS = ("feature_name", "feature_docs", "feature_ppt", "scope_example",
+                      "spec_reference", "field_example", "db_example", "screen_field_example", "file_path_example",
+                      "permission_example", "menu_path_example", "domain_term")
+EXAMPLE_EMPTY_INLINE = "—"
 # modules（顶层，必需）から作る占位符。各要素 {"name", "kind", "role"}，kind は MODULE_KINDS のどれか。
 # kind=api のうち "main": true がちょうど 1 つ、kind=frontend がちょうど 1 つ必要。
 MODULE_KINDS = ("api", "lib", "service", "frontend", "build")
@@ -66,7 +119,8 @@ MODULE_PLACEHOLDERS = {
     "wrapper_sep_after": "「<build_wrapper>、」（空なら空）",
     "wrapper_code_before": "「、`<build_wrapper>`」（空なら空）",
 }
-NEEDS["install"] += list(dict.fromkeys(PAYLOAD_PLACEHOLDERS.values())) + ["modules"]
+NEEDS["install"] += list(dict.fromkeys(PAYLOAD_PLACEHOLDERS.values())) + [
+    "modules", "deploy.manifest_envs", "deploy.prod_manifests", "examples"]
 PH_TOKEN_RE = re.compile(r"\{\{([a-z_]+)\}\}")
 
 
@@ -179,7 +233,57 @@ def payload_values(cfg: dict) -> dict:
             die(f"{k} 为空（payload 占位符 {{{{{name}}}}} 用）")
         vals[name] = v
     vals.update(module_values(get(cfg, "modules"), vals))
+    vals.update(stack_values(vals))
+    vals.update(deploy_values(get(cfg, "deploy.manifest_envs"), get(cfg, "deploy.prod_manifests")))
+    vals.update(example_values(get(cfg, "examples")))
     return vals
+
+
+def stack_values(vals: dict) -> dict:
+    jv, sb = vals["java_version"], vals["spring_boot_version"]
+    if not re.fullmatch(r"\d+", jv):
+        die(f"stack.java_version={jv!r} は整数の版（8、11、17 など。1.8 は 8 と書く）")
+    m = re.fullmatch(r"(\d+)\.(\d+)(?:\.[\w.-]+)?", sb)
+    if not m:
+        die(f"stack.spring_boot_version={sb!r} は 2.5.14 のような版番号")
+    return {"java_next_version": str(int(jv) + 1), "spring_boot_series": f"{m.group(1)}.{m.group(2)}.x"}
+
+
+def _str_list(v, key: str) -> List[str]:
+    if not isinstance(v, list) or not v or not all(isinstance(x, str) and x for x in v):
+        die(f"{key} は空でない文字列リスト")
+    return v
+
+
+def deploy_values(envs, prods) -> dict:
+    envs = _str_list(envs, "deploy.manifest_envs")
+    prods = _str_list(prods, "deploy.prod_manifests")
+    return {
+        "prod_manifests_slash": " / ".join(prods),
+        "prod_manifests_code_ja": "、".join(f"`{p}`" for p in prods),
+        "prod_manifests_code_en": ", ".join(f"`{p}`" for p in prods),
+        "prod_manifest_paths": "、".join(f"manifests/{p}" for p in prods),
+        "prod_manifest_paths_code_ja": "、".join(f"`manifests/{p}`" for p in prods),
+        "prod_manifest_paths_code_slash": " / ".join(f"`manifests/{p}`" for p in prods),
+        "manifest_envs_brace": "{" + ",".join(envs) + "}" if len(envs) > 1 else envs[0],
+    }
+
+
+def example_values(ex) -> dict:
+    if not isinstance(ex, dict):
+        die("examples は object（{id: Markdown 片段}）")
+    got = {k: v for k, v in ex.items() if not str(k).startswith("_")}
+    missing = [k for k in EXAMPLE_IDS if k not in got]
+    extra = [k for k in got if k not in EXAMPLE_IDS]
+    if missing or extra:
+        die("examples: " + "；".join(([f"缺 id {missing}"] if missing else []) + ([f"未知 id {extra}"] if extra else []))
+            + "（id 一览见 tools/project_config.py EXAMPLE_IDS；不要的写空串）")
+    for k, v in got.items():
+        if not isinstance(v, str):
+            die(f"examples.{k} は文字列（空串 = その行を装さない）")
+        if "{{ex_" in v:
+            die(f"examples.{k} の中に {{{{ex_…}}}} は書けない")
+    return {f"ex_{k}": (EXAMPLE_EMPTY_INLINE if k in EXAMPLE_INLINE_IDS and v == "" else v) for k, v in got.items()}
 
 
 def module_values(mods, vals: dict) -> dict:
@@ -213,10 +317,27 @@ def module_values(mods, vals: dict) -> dict:
     }
 
 
-def _render(text: str, vals: dict, where: str) -> str:
+def _unknown(text: str, vals: dict, where: str):
     unknown = sorted({m.group(1) for m in PH_TOKEN_RE.finditer(text) if m.group(1) not in vals})
     if unknown:
         die(f"{where}: 未定义的 payload 占位符 {unknown}（在 PAYLOAD_PLACEHOLDERS 里登记）")
+
+
+def _render(text: str, vals: dict, where: str) -> str:
+    """先展开 {{ex_*}}（block id 值为空 → 那一行不装；inline id 空 → —），再替换其余占位符（examples 的值里也可以有）"""
+    _unknown(text, vals, where)
+    if "{{ex_" in text:
+        out = []
+        for line in re.split(r"(?<=\n)", text):  # \n だけで分ける（splitlines は \r 等でも切る）
+            ex = [m.group(1) for m in PH_TOKEN_RE.finditer(line) if m.group(1).startswith("ex_")]
+            blk = [e for e in ex if e[3:] not in EXAMPLE_INLINE_IDS]
+            if blk and line.strip() != "{{%s}}" % blk[0]:
+                die(f"{where}: block 型 {{{{{blk[0]}}}}} は 1 行に単独で書く（文中なら EXAMPLE_INLINE_IDS に登録）")
+            if any(vals[e] == "" for e in blk):
+                continue
+            out.append(PH_TOKEN_RE.sub(lambda m: vals[m.group(1)] if m.group(1).startswith("ex_") else m.group(0), line))
+        text = "".join(out)
+        _unknown(text, vals, where)
     return PH_TOKEN_RE.sub(lambda m: vals[m.group(1)], text)
 
 

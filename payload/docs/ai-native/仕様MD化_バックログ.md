@@ -14,16 +14,7 @@
 
 | 优先级 | 機能 | docs 路径 | 状态 | 备注 |
 |--------|------|-----------|------|------|
-| — | PCF算定 Excel 取込 | `docs/PCF算定_Excel取込/` | done | 范例 |
-| — | 报告出力 排出量 PPT | `docs/报告出力_排出量PPT/` | done | 范例 |
-| 高 | PCF算定 UIUX改善 | `docs/PCF算定_UIUX改善/` | wip | 复制 API/UI 实装中；Step 合并 todo |
-| 高 | 電力データ連携 申請一覧/詳細 | `docs/電力データ連携_申請/` | todo | xlsx 在 `{{main_module}}/新的画面和后台需求/` |
-| 高 | 証書・クレジット一覧 | `docs/証書クレジット_一覧/` | todo | xlsx 在 `{{main_module}}/参考设计书/` |
-| 中 | ESG アップロード / Activity | `docs/ESG_活動量/` | todo | 复盘：error check / 主键 |
-| 中 | 公開データ連携 | `docs/公開データ連携/` | todo | IF xlsx 在 `{{main_module}}/新需求/` |
-| 低 | 削減貢献量 | `docs/削減貢献量/` | todo | |
-| 低 | サプライヤ開示 | `docs/サプライヤ開示/` | todo | |
-| 低 | GXD / PCF データ連携 | `docs/GXD_PCF連携/` | todo | |
+{{ex_backlog_rows}}
 
 ## 追加手顺
 

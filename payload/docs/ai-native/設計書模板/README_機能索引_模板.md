@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 要件 | `{要件文件名.pptx / xlsx / URL}` |
-| 画面 | `{菜单路径，如 PCF設定 → …}` |
+| 画面 | `{菜单路径，如 {{ex_menu_path_example}}}` |
 | 关联设计 | `{docs/其他機能/}`（若无则 —） |
 | 理解现状 | [理解现状摘要.md](./理解现状摘要.md)（可选） |
 | AI Native | [Prompt模板](../ai-native/Prompt模板.md) · [設計書模板](../ai-native/設計書模板/README.md) |

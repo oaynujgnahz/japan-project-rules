@@ -125,6 +125,7 @@ def scan_build(root: Path) -> Dict[str, dict]:
         out["build.backend_test"] = {"value": f"{wrapper} -pl <module> -am test -DskipTests=false", "evidence": ["pom.xml" + (" + mvnw" if wrapper != "mvn" else "")]}
         out["payload.build_cmd"] = {"value": wrapper, "evidence": ["pom.xml" + (" + mvnw" if wrapper != "mvn" else "")]}
         out["payload.root_artifact"] = {"value": art.group(1) if art else None, "evidence": out["detect.contains"]["evidence"]}
+        out.update(scan_stack(t, jv))
         chk = {"name": "maven", "cmd": f"{wrapper} -v", "expect": jv.group(1) if jv else ""}
         out["env_checks"] = {"value": [chk], "evidence": [f"pom.xml:{_line_of(t, jv.start())} {jv.group(0).strip()}"] if jv else ["pom.xml（未写 Java 版本，只检查能运行）"]}
     elif gradle:
@@ -196,7 +197,52 @@ def scan_build(root: Path) -> Dict[str, dict]:
         out["scan.base_package"] = {"value": "", "evidence": ["src/main/java 下没有 package 声明"]}
     out["payload.base_package"] = dict(out["scan.base_package"])
     out["payload.repo_name"] = {"value": root.resolve().name, "evidence": ["项目目录名"]}
+    out.update(scan_deploy(root))
     return out
+
+
+def scan_stack(t: str, jv) -> Dict[str, dict]:
+    """pom.xml から Java / Spring Boot の版（stack.*）。読めなければ None（→ 回答必須）"""
+    out: Dict[str, dict] = {}
+    if jv:
+        v = jv.group(1)
+        v = v[2:] if v.startswith("1.") else v
+        out["stack.java_version"] = {"value": v if v.isdigit() else None,
+                                     "evidence": [f"pom.xml:{_line_of(t, jv.start())} {jv.group(0).strip()}"]}
+    props = dict(re.findall(r"<([\w.-]+)>\s*([^<\s]+)\s*</\1>", (re.search(r"<properties>(.*?)</properties>", t, re.S) or [None, ""])[1]))
+    sb, ev = None, None
+    par = re.search(r"<parent>(.*?)</parent>", t, re.S)
+    if par and re.search(r"<artifactId>\s*spring-boot-starter-parent\s*</artifactId>", par.group(1)):
+        m = re.search(r"<version>\s*([^<\s]+)\s*</version>", par.group(1))
+        if m:
+            sb, ev = m.group(1), f"pom.xml:{_line_of(t, par.start(1) + m.start())} parent spring-boot-starter-parent {m.group(1)}"
+    if sb is None:
+        for k in ("spring-boot.version", "spring.boot.version", "springboot.version"):
+            if k in props:
+                sb, ev = props[k], f"pom.xml <{k}>{props[k]}"
+                break
+    if sb is None:
+        m = re.search(r"<artifactId>\s*spring-boot-dependencies\s*</artifactId>\s*<version>\s*([^<\s]+)\s*</version>", t)
+        if m:
+            sb, ev = m.group(1), f"pom.xml:{_line_of(t, m.start())} spring-boot-dependencies {m.group(1)}"
+    if sb and sb.startswith("${"):
+        sb = props.get(sb[2:-1])
+    if sb:
+        out["stack.spring_boot_version"] = {"value": sb, "evidence": [ev]}
+    return out
+
+
+def scan_deploy(root: Path) -> Dict[str, dict]:
+    """manifests/ の子ディレクトリ（deploy.*）。無ければ何も返さない（→ 回答必須）"""
+    md = root / "manifests"
+    if not md.is_dir():
+        return {}
+    envs = sorted(p.name for p in md.iterdir() if p.is_dir() and not p.name.startswith("."))
+    if not envs:
+        return {}
+    prods = [e for e in envs if re.search(r"(^|[-_])(prd|prod|production)($|[-_])", e)]
+    return {"deploy.manifest_envs": {"value": envs, "evidence": [f"manifests/{e}/" for e in envs[:8]]},
+            "deploy.prod_manifests": {"value": prods or None, "evidence": [f"manifests/{e}/" for e in prods] or ["名前に prd/prod を含む環境なし"]}}
 
 
 def payload_install_keys() -> Dict[str, dict]:
@@ -358,9 +404,16 @@ def build_questions(example: dict, scan: Dict[str, dict], loc_scan: Optional[dic
       "kind=api 中恰好一个加 \"main\": true（文档里的主 API 模块），kind=frontend 恰好一个。下面是按构建文件起草的，role 要填",
       evidence=[json.dumps(draft, ensure_ascii=False)] + list((scan.get("scan.modules") or {}).get("evidence") or []),
       ref=ex("modules"))
+    q("examples", "required",
+      "项目专属的范例文本（JSON object，id → Markdown 片段，可含 {{占位符}}）。每个 id 都要写；没有的写空串："
+      "[inline] id（表格行/句子里的例子）空 → 显示「—」、行保留；其余 block id 空 → 那一行（段）不装。"
+      "id 和用途见 tools/project_config.py EXAMPLE_IDS，示例项目的写法见 example_value",
+      evidence=[json.dumps(OrderedDict((k, "") for k in pc.EXAMPLE_IDS), ensure_ascii=False)],
+      ref=ex("examples"))
     det = ["i18n.locale_dir", "unit_test.locale_files", "detect.file", "detect.contains", "local_only", "executable",
            "env_checks", "build.backend_test", "build.frontend", "payload.repo_name", "payload.build_cmd", "payload.base_package",
-           "payload.root_artifact"]
+           "payload.root_artifact", "stack.java_version", "stack.spring_boot_version",
+           "deploy.manifest_envs", "deploy.prod_manifests"]
     if scan:
         det += ["scan.build_tool", "scan.modules", "scan.base_package"]
     for k in det:
@@ -509,7 +562,8 @@ def self_test(cfg_path: Path, cfg: dict, project: Optional[Path], confirmed_hits
     log = []
     pv = pc.payload_values(pc.load(str(cfg_path), "install"))
     log.append("自检 0 OK：install.sh 的 payload 占位符都有值（" + ", ".join(
-        f"{k}={pv[k]!r}" for k in list(pc.PAYLOAD_PLACEHOLDERS) + ["main_module", "frontend_module"]) + "）")
+        f"{k}={pv[k]!r}" for k in list(pc.PAYLOAD_PLACEHOLDERS) + ["main_module", "frontend_module", "prod_manifests_slash"])
+        + f", examples 有值 {sum(1 for k in pc.EXAMPLE_IDS if dget(cfg, 'examples.' + k))}/{len(pc.EXAMPLE_IDS)}）")
     if project is None:
         log.append("自检 1/2 跳过：--no-scan（读不到代码）。到能读到代码的机器上跑 --verify 补指纹。")
         return log

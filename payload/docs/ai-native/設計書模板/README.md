@@ -6,7 +6,7 @@
 
 - [Future Architect — Markdown 設計ドキュメント規約](https://future-architect.github.io/arch-guidelines/documents/forMarkdown/markdown_design_document.html)（`06_画面` / `07_API` / OpenAPI 分工）
 - [Future — Web API 設計ガイドライン](https://future-architect.github.io/arch-guidelines/documents/forWebAPI/web_api_guidelines.html)
-- 本仓库范例：`docs/PCF算定_Excel取込/`、`docs/PCF算定_UIUX改善/`、`docs/报告出力_排出量PPT/`
+{{ex_template_design_reference}}
 - Cursor Skill：`md-design-doc`（写设计书时 Agent 应读取）
 
 ## 两种写法（选一）

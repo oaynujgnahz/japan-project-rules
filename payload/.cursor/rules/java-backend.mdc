@@ -4,7 +4,7 @@ globs: "**/*.java,**/mapper/**/*.xml,**/*.sql"
 alwaysApply: false
 ---
 
-<!-- [{{system_name}}] 整份为 {{system_name}} 后端技术栈（Java 8 / Spring Boot / MyBatis / JUnit 4）专属；将来移到技术栈配置 -->
+<!-- [{{system_name}}] 整份为 {{system_name}} 后端技术栈（Java {{java_version}} / Spring Boot / MyBatis / JUnit 4）专属；将来移到技术栈配置 -->
 # Java Backend
 
 ## 结构
@@ -68,14 +68,14 @@ else { throw new BusinessException("..."); }
 
 ## 报告 / 文件生成
 
-<!-- [{{system_name}}] {{main_module}} 报告生成、{{name}}-report-file-io skill、PCF 等日文业务术语属 {{system_name}} -->
+<!-- [{{system_name}}] {{main_module}} 报告生成、{{name}}-report-file-io skill、{{ex_domain_term}} 等日文业务术语属 {{system_name}} -->
 - `{{main_module}}` 中 Excel、PDF、PPT、报告生成对 fonts、模板、坐标敏感
 - 改动前读既有实现；参照 `{{name}}-report-file-io` skill
-- PCF、电力连携、报告、削減相关保留日语业务术语（除非用户要求翻译）
+{{ex_business_terms_rule_ja}}
 
 ## 测试
 
 <!-- [{{system_name}}] JUnit 4、{module} 路径和测试样例类属 {{system_name}} -->
 - `{module}/src/test/java/.../{Class}Test.java`（JUnit 4）
 - POI/PPT/Excel：classpath 模板 + 断言
-- 参照 `PcfCalculationExcelTemplateComposerTest`、`{{main_module}}/.../report/*Test.java`
+{{ex_report_test_reference}}

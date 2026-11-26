@@ -108,8 +108,4 @@ alwaysApply: false
 - **纯 bugfix**（不改 BR / AC）可不改设计书，但要在 RV 注明「設計書: N/A（業務ルール変更なし）」；改了业务规则就按上表同步（第 4 条）
 
 Agent **功能开发** 阶段：每完成一块业务逻辑，同步更新上述 MD（与代码同一 PR / 同一任务内）。
-
-<!-- [{{system_name}}] 参考范例均为 {{system_name}} 功能的设计书 -->
-## 参考
-
-- 完成范例：`docs/PCF算定_Excel取込/`、`docs/报告出力_排出量PPT/`、`docs/PCF算定_UIUX改善/処理フロー詳細.md`
+{{ex_design_docs_reference}}

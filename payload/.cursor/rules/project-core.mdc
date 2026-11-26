@@ -11,7 +11,7 @@ alwaysApply: true
 <!-- [{{system_name}}] 本节整节为 {{system_name}} 技术栈、Maven 模块和目录路径；将来由项目配置替换 -->
 ## Project
 
-Java 8 / Spring Boot 2.5.14 + Vue 3 + TS + Vite。Maven：`{{root_artifact}}`（`{{build_cmd}}`）。  
+Java {{java_version}} / Spring Boot {{spring_boot_version}} + Vue 3 + TS + Vite。Maven：`{{root_artifact}}`（`{{build_cmd}}`）。  
 模块：{{modules_inline}}。
 
 路径：Java `{{base_package}}.*` · mapper/SQL `resources/mapper/` · 前端 `{{frontend_module}}/src/{apis,views,router,store,locale}` · 设计书 `docs/{機能}/`。
@@ -28,17 +28,17 @@ Node v16.14.0 · 保留 `{{frontend_module}}/patches/naive-ui+2.35.0.patch`。
 
 ## Coding（全局）
 
-<!-- [{{system_name}}] Java 8 only 属 {{system_name}} 技术栈；注释日/英、禁止中文注释为对日项目要求 -->
-- 先读既存，minimal diff；Java 8 only；不擅自升级依赖
+<!-- [{{system_name}}] Java {{java_version}} only 属 {{system_name}} 技术栈；注释日/英、禁止中文注释为对日项目要求 -->
+- 先读既存，minimal diff；Java {{java_version}} only；不擅自升级依赖
 - 注释日/英，解释 **why**；禁止中文注释
 - 新类按业务域命名；勿滥用 `Ghg` 等宽泛前缀
 - 不编辑生成/模板文件（除非任务要求）；新生产依赖需用户同意
 
 ## 禁止
 
-<!-- [{{system_name}}] manifests/prd、manifests/mieco-prd 为 {{system_name}} 部署环境 -->
-- 改 `manifests/prd`、`manifests/mieco-prd`（除非明确要求）
-- 提交密钥/真实凭证；盲目重写；覆盖无关未提交改动；Java 9+ 语法
+<!-- [{{system_name}}] {{prod_manifest_paths}} 为 {{system_name}} 部署环境 -->
+- 改 {{prod_manifest_paths_code_ja}}（除非明确要求）
+- 提交密钥/真实凭证；盲目重写；覆盖无关未提交改动；Java {{java_next_version}}+ 语法
 
 ## Agent
 

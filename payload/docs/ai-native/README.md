@@ -97,7 +97,4 @@
 ## E2E
 
 `e2e/` · MCP：`.cursor/mcp.json.example`
-
-## 设计书范例
-
-`docs/PCF算定_Excel取込/` · `docs/报告出力_排出量PPT/`
+{{ex_readme_design_reference}}

@@ -15,10 +15,10 @@ The user (or parent agent) must provide:
 
 | 参数 | 说明 | 示例 |
 |------|------|------|
-| `{機能}` | 功能名称 | `PCF算定 UIUX改善 ＆ EPD追加` |
-| `{docs路径}` | 设计书目录 | `docs/PCF算定_UIUX改善/` |
-| `{PPT路径}` | 要件 PPT（画面改修时必填） | `~/Downloads/要件定義書_①「PCF」UIUX改善＆EPD追加.pptx` |
-| `{范围}` | 可选，限定本次 PR/步骤 | `PR-3 EPD` · `Step2 表列` |
+| `{機能}` | 功能名称 | {{ex_feature_name}} |
+| `{docs路径}` | 设计书目录 | {{ex_feature_docs}} |
+| `{PPT路径}` | 要件 PPT（画面改修时必填） | {{ex_feature_ppt}} |
+| `{范围}` | 可选，限定本次 PR/步骤 | {{ex_scope_example}} |
 
 If `{PPT路径}` is given, treat it as the **authoritative UI source** (priority #1 per `ppt-first-ui.mdc`).
 
@@ -110,7 +110,7 @@ Delegate **Feature** subagent per `{范围}` or README PR table:
 | 设计书同步 | Docs | `md-design-doc` skill |
 | 文件 I/O | Feature | `{{name}}-report-file-io` skill |
 
-Enforce **minimal diff**, Java 8, ja/en locale sync (no `zh` unless asked).
+Enforce **minimal diff**, Java {{java_version}}, ja/en locale sync (no `zh` unless asked).
 
 ### Phase 5 — 实现评审
 
@@ -172,20 +172,10 @@ Delegate **Test** + browser MCP or `e2e/tests/`:
 - [ ] 具体可执行项（含委派目标）
 ```
 
-## PCF UIUX 示例（默认参照）
-
-When `{docs路径}` = `docs/PCF算定_UIUX改善/`:
-
-- PPT: `要件定義書_①「PCF」UIUX改善＆EPD追加.pptx`
-- PR 拆分见 `{docs路径}/README.md` §实装范围拆分
-- UI 布局准绳: PPT slide 13～15, 20～24（UI改修案 + Step 详细）
-- EPD: slide 8～9, 16～17
-- 复制: slide 10～11
-- 设计评审记录: `{docs路径}/设计评审记录.md`
-
+{{ex_walkthrough}}
 ## Constraints
 
 - Reply to user in **Chinese** unless quoting JP UI text.
-- Do not edit `manifests/prd` / `manifests/mieco-prd` unless explicitly requested.
+- Do not edit {{prod_manifest_paths_code_slash}} unless explicitly requested.
 - Do not commit secrets; do not skip tests and claim done.
 - Orchestrator coordinates — if you must make a one-line doc fix to unblock a gate, do so, but route code changes to Feature subagent.

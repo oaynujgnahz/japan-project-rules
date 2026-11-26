@@ -44,9 +44,7 @@ alwaysApply: false
 
 ## 依赖字段リセット（表形式画面の必須チェック）
 
-<!-- [{{system_name}}] 示例字段为 {{system_name}} 的 PCF Step2 画面；残值排查原则本身通用 -->
-行データに「他の選択項目に依存する隠しフィールド」がある画面（例：PCF Step2 の `emissionCalcMethod` / `weight` / `milage` / `fuelConsumption`）では、残値が別のエラーコードとして現れ、ユーザーが画面上で消せない不具合になりやすい。
-
+{{ex_dependent_field_example}}
 - **依存フィールドを追加・変更するときは、その前提を変える全入口を列挙してから実装する**
 - 入口の例：親項目の select 変更 / クリア、方式・区分の切替、モーダル回写、一括反映、複製、DB 読込、新規作成後の回填
 - リセット処理は 1 箇所（例：`activityItemDependentFieldReset()`）に集約し、各入口から呼ぶ。入口ごとに条件を書き分けない

@@ -83,5 +83,5 @@ MCP 启用：复制 `.cursor/mcp.json.example` → `.cursor/mcp.json`（本地�
 
 <!-- [{{system_name}}] 代码样例和设计书范例路径均为 {{system_name}} -->
 - JUnit/Excel/PPT：`{{main_module}}/src/test/java/.../excel/`、`.../report/`
-- 设计书范例：`docs/PCF算定_Excel取込/`、`docs/报告出力_排出量PPT/`
+{{ex_workflow_design_reference}}
 - E2E 范例：`e2e/tests/`

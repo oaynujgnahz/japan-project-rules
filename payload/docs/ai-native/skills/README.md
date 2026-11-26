@@ -45,7 +45,7 @@ Agent 仍受 `.cursor/rules/` 约束；以下为核心要点：
 
 - 一功能一文件夹：`docs/{機能}/`
 - `06_画面設計書/` + `07_API設計書/` + `openapi.yaml`
-- 范例：`docs/PCF算定_Excel取込/`
+{{ex_skills_design_reference}}
 
 ## 推荐可选 Skills
 

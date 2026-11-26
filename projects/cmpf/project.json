@@ -99,6 +99,64 @@
       "role": "JaCoCo aggregate coverage module."
     }
   ],
+  "stack": {
+    "_doc": {
+      "_": "技术栈版本（AGENTS.md / project-core.mdc 等的 {{java_version}}、{{spring_boot_version}}、派生的 {{java_next_version}}、{{spring_boot_series}}）。必需，缺键报错",
+      "java_version": "Java 版本整数（1.8 写 8）；init 取 pom.xml 的 java.version / maven.compiler.source|release",
+      "spring_boot_version": "Spring Boot 版本（如 2.5.14）；init 取 pom.xml 的 spring-boot-starter-parent 版本或 spring-boot.version 属性"
+    },
+    "java_version": "8",
+    "spring_boot_version": "2.5.14"
+  },
+  "deploy": {
+    "_doc": {
+      "_": "部署环境（AGENTS.md / deployment.mdc / project-core.mdc / orchestrator.md 的 manifests 说明）。必需，缺键报错",
+      "manifest_envs": "manifests/ 下的环境目录（可用 glob 概括，如 prd-*）；init 取 manifests/ 的子目录",
+      "prod_manifests": "生产环境（禁止随便改）的目录名；init 取名字里带 prd / prod 的子目录"
+    },
+    "manifest_envs": [
+      "dev",
+      "dev-wf",
+      "stg",
+      "prd",
+      "mieco-*"
+    ],
+    "prod_manifests": [
+      "prd",
+      "mieco-prd"
+    ]
+  },
+  "examples": {
+    "_doc": "项目专属的范例文本（payload 里的 {{ex_<id>}}）。值是 Markdown 片段，可含其他 {{占位符}}。id 分两种：inline（表格行/句子里的例子，tools/project_config.py EXAMPLE_INLINE_IDS）空串显示「—」、行保留；block（其余，独占一行，可多行）空串 = 那一行不装（如项目还没有范例设计书、术语表）。id 一览和用途见 EXAMPLE_IDS，每个 id 都要写，多余的报错。init 问一次（JSON）",
+    "feature_name": "`PCF算定 UIUX改善 ＆ EPD追加`",
+    "feature_docs": "`docs/PCF算定_UIUX改善/`",
+    "feature_ppt": "`~/Downloads/要件定義書_①「PCF」UIUX改善＆EPD追加.pptx`",
+    "scope_example": "`PR-3 EPD` · `Step2 表列`",
+    "walkthrough": "## PCF UIUX 示例（默认参照）\n\nWhen `{docs路径}` = `docs/PCF算定_UIUX改善/`:\n\n- PPT: `要件定義書_①「PCF」UIUX改善＆EPD追加.pptx`\n- PR 拆分见 `{docs路径}/README.md` §实装范围拆分\n- UI 布局准绳: PPT slide 13～15, 20～24（UI改修案 + Step 详细）\n- EPD: slide 8～9, 16～17\n- 复制: slide 10～11\n- 设计评审记录: `{docs路径}/设计评审记录.md`\n",
+    "design_docs_reference": "\n<!-- [{{system_name}}] 参考范例均为 {{system_name}} 功能的设计书 -->\n## 参考\n\n- 完成范例：`docs/PCF算定_Excel取込/`、`docs/报告出力_排出量PPT/`、`docs/PCF算定_UIUX改善/処理フロー詳細.md`",
+    "workflow_design_reference": "- 设计书范例：`docs/PCF算定_Excel取込/`、`docs/报告出力_排出量PPT/`",
+    "screen_doc_reference": "<!-- [{{system_name}}] 范例路径为 {{system_name}} 功能的设计书 -->\n- 范例：`docs/PCF算定_UIUX改善/06_画面設計書/SCR-Step2_工程活動量登録.md`",
+    "readme_design_reference": "\n## 设计书范例\n\n`docs/PCF算定_Excel取込/` · `docs/报告出力_排出量PPT/`",
+    "skills_design_reference": "- 范例：`docs/PCF算定_Excel取込/`",
+    "template_design_reference": "- 本仓库范例：`docs/PCF算定_Excel取込/`、`docs/PCF算定_UIUX改善/`、`docs/报告出力_排出量PPT/`",
+    "spec_reference": "[PCF算定_UIUX改善/処理フロー詳細.md](../PCF算定_UIUX改善/処理フロー詳細.md)",
+    "spec_migration_reference": "\n参考已迁移范例：`docs/PCF算定_UIUX改善/`（2026-07-16）。",
+    "field_example": "`copyEpdSourceLogicId`",
+    "db_example": "`cfp_epd_certification_tbl`",
+    "screen_field_example": "`productId`、`temporarySaveFlag`",
+    "file_path_example": "`footprint/index.vue`",
+    "permission_example": "`ACCESS_U_PCF_…`",
+    "menu_path_example": "PCF設定 → …",
+    "dependent_field_example": "<!-- [{{system_name}}] 示例字段为 {{system_name}} 的 PCF Step2 画面；残值排查原则本身通用 -->\n行データに「他の選択項目に依存する隠しフィールド」がある画面（例：PCF Step2 の `emissionCalcMethod` / `weight` / `milage` / `fuelConsumption`）では、残値が別のエラーコードとして現れ、ユーザーが画面上で消せない不具合になりやすい。\n",
+    "domain_term": "PCF",
+    "business_terms_rule_ja": "- PCF、电力连携、报告、削減相关保留日语业务术语（除非用户要求翻译）",
+    "business_terms_rule_en": "- Preserve Japanese business terms in PCF, electricity service, report, and reduction-related features unless the user requests translation.",
+    "report_test_reference": "- 参照 `PcfCalculationExcelTemplateComposerTest`、`{{main_module}}/.../report/*Test.java`",
+    "backlog_rows": "| — | PCF算定 Excel 取込 | `docs/PCF算定_Excel取込/` | done | 范例 |\n| — | 报告出力 排出量 PPT | `docs/报告出力_排出量PPT/` | done | 范例 |\n| 高 | PCF算定 UIUX改善 | `docs/PCF算定_UIUX改善/` | wip | 复制 API/UI 实装中；Step 合并 todo |\n| 高 | 電力データ連携 申請一覧/詳細 | `docs/電力データ連携_申請/` | todo | xlsx 在 `{{main_module}}/新的画面和后台需求/` |\n| 高 | 証書・クレジット一覧 | `docs/証書クレジット_一覧/` | todo | xlsx 在 `{{main_module}}/参考设计书/` |\n| 中 | ESG アップロード / Activity | `docs/ESG_活動量/` | todo | 复盘：error check / 主键 |\n| 中 | 公開データ連携 | `docs/公開データ連携/` | todo | IF xlsx 在 `{{main_module}}/新需求/` |\n| 低 | 削減貢献量 | `docs/削減貢献量/` | todo | |\n| 低 | サプライヤ開示 | `docs/サプライヤ開示/` | todo | |\n| 低 | GXD / PCF データ連携 | `docs/GXD_PCF連携/` | todo | |",
+    "glossary_core": "## 核心概念\n\n| 日本語 | English | 备注 |\n|--------|---------|------|\n| 排出量 | Emissions | 不用 Emission Volume |\n| GHG排出量 | GHG Emissions | GHG 保留 |\n| Scope 1,2排出量 | Scope 1,2 Emissions | 数字格式保留 |\n| Scope 3排出量 | Scope 3 Emissions | |\n| 算定 | Calculation | 算定年度 → Calculation Year |\n| 算定年度 | Calculation Year | |\n| 算定対象範囲 | Calculation Scope | |\n| 排出原単位 | Emission Factor | |\n| 排出原単位ID | Emission Factor ID | Excel 列名一致 |\n| 組織ベース原単位 | Organization-based Emission Intensity | |\n| 削減 | Reduction | |\n| 削減施策 | Reduction Measures | |\n| 削減貢献量 | Reduction Contribution | |\n| 連携 | Integration / Linkage | 電力データ連携 → Electricity Data Integration |\n| 電力データ連携 | Electricity Data Integration | |\n| 同意申込 | Consent Application | 电力外部 IF 用语 |\n| 公開データ | Public Data | |\n| 証書・クレジット | Certificates and Credits | |\n| レポート出力 | Report Output | |\n| 開示 | Disclosure | |\n| サプライチェーン | Supply Chain | |\n| 活動項目 | Activity Item | |\n| 拠点 | Site | en 模板 Site List |\n| PCF算定 | PCF Calculation | Product Carbon Footprint |\n| 取込 | Import | 上传取込 |\n| 出力 | Export / Output | 下载场景用 Export |\n| 原単位 | Emission Intensity / Factor | 上下文区分 factor vs intensity |\n",
+    "glossary_proper_nouns": "3. 固有名（MieCO2、Keycloak 等）不翻译",
+    "glossary_reference": "- `docs/PCF算定_Excel取込/` 校验 message 日英对照"
+  },
   "code_comments": {
     "_doc": {
       "forbid_chinese": "enables .cursor/hooks/check-no-chinese-comments.py"

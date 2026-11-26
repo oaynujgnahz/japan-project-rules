@@ -79,7 +79,7 @@ SHEET_FILES = {"summary": "xl/worksheets/sheet2.xml", "layout": "xl/worksheets/s
 FIXED_FILES = ["xl/worksheets/sheet1.xml", "xl/worksheets/sheet6.xml"]  # 試験観点 / DB書き込み判定
 
 SCHEMA = {
-    "meta": {"feature": "PCF算定_Excel取込", "author": "AI", "created": "2026-10-09", "updater": "", "updated": "",
+    "meta": {"feature": "機能名", "author": "AI", "created": "2026-10-09", "updater": "", "updated": "",
              "design_doc": "docs/{機能}/ または 設計書.xlsx", "lang": "ja"},
     "layout": [{"section": "【SCR-xxx 画面名】エリア名", "ref": "SCR-xxx", "cases": [
         {"viewpoint": "画面レイアウト", "name": "項目名", "type": "BTN", "label": "ラベル表示内容（画面文言そのまま）",

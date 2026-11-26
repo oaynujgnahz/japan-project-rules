@@ -47,10 +47,10 @@ CO2MOS AI 本格運用方針に基づく開発工程整备。详细流程、Agen
 
 新功能开发：先读 `docs/ai-native/開発フロー.md`，实装前必须理解既存逻辑并对照 `docs/{機能}/` 设计书。
 
-<!-- [{{system_name}}] 本节整节为 {{system_name}} 项目概要：Java 8 / Spring Boot 2.5.14 / Vue 3、{{root_artifact}} 与各模块、manifests 和 Azure Pipelines；将来由项目配置替换 -->
+<!-- [{{system_name}}] 本节整节为 {{system_name}} 项目概要：Java {{java_version}} / Spring Boot {{spring_boot_version}} / Vue 3、{{root_artifact}} 与各模块、manifests 和 Azure Pipelines；将来由项目配置替换 -->
 ## Project Overview
 
-- {{system_name}} is a multi-module Java 8 / Spring Boot 2.5.14 project with a Vue 3 + TypeScript + Vite frontend.
+- {{system_name}} is a multi-module Java {{java_version}} / Spring Boot {{spring_boot_version}} project with a Vue 3 + TypeScript + Vite frontend.
 - Root Maven parent: `pom.xml`, artifact `{{root_artifact}}`.
 - Maven modules:
 {{modules_list}}
@@ -70,7 +70,7 @@ CO2MOS AI 本格運用方針に基づく開発工程整备。详细流程、Agen
 - Frontend router: `{{frontend_module}}/src/router/`
 - Frontend stores: `{{frontend_module}}/src/store/`
 - Frontend locale files: `{{frontend_module}}/src/locale/{ja,en}/`（`zh/` 目录存在但不在维护范围，新功能不需更新 zh）
-- Kubernetes manifests: `manifests/{dev,dev-wf,stg,prd,mieco-*}/`
+- Kubernetes manifests: `manifests/{{manifest_envs_brace}}/`
 
 <!-- [{{system_name}}] 本节整节为 {{system_name}} 构建命令（{{build_cmd}}、Maven 模块、npm、Node v16.14.0、naive-ui patch）；将来由项目配置的 BUILD_CMD 等替换 -->
 ## Common Commands
@@ -126,9 +126,9 @@ Frontend notes:
 
 - Follow existing patterns in the touched module before introducing new abstractions.
 - Keep changes focused on the user request. Do not perform drive-by refactors, formatting churn, or unrelated cleanup.
-<!-- [{{system_name}}] Java 8、Spring Boot 2.5.x、后端依赖栈（MyBatis、PostgreSQL、Keycloak 等）、{{base_package}} 包结构属 {{system_name}} 技术栈 -->
-- Java target is Java 8. Do not use newer language features.
-- Spring Boot version is 2.5.x. Prefer existing project conventions over upgrading dependencies.
+<!-- [{{system_name}}] Java {{java_version}}、Spring Boot {{spring_boot_series}}、后端依赖栈（MyBatis、PostgreSQL、Keycloak 等）、{{base_package}} 包结构属 {{system_name}} 技术栈 -->
+- Java target is Java {{java_version}}. Do not use newer language features.
+- Spring Boot version is {{spring_boot_series}}. Prefer existing project conventions over upgrading dependencies.
 - Backend commonly uses Lombok, MapStruct, MyBatis/MyBatis Plus, PageHelper, PostgreSQL, Keycloak, Redis, and SendGrid. Match the local pattern in the module being edited.
 - Preserve existing package structure under `{{base_package}}`.
 <!-- [{{system_name}}] 对日项目要求：注释写日文或英文、禁止中文注释，以及 .cursor/hooks 中文注释检查 -->
@@ -153,16 +153,16 @@ Frontend notes:
 - Keep controller, service, mapper, DTO/entity, and XML mapper changes aligned.
 - For new database-backed behavior, check whether SQL scripts, mapper XML, Java model classes, and frontend API types all need updates.
 - Prefer adding focused unit or integration tests where the surrounding module already has test patterns.
-<!-- [{{system_name}}] {{main_module}} 报告生成、PCF 等日文业务术语属 {{system_name}} 专属 -->
+<!-- [{{system_name}}] {{main_module}} 报告生成、{{ex_domain_term}} 等日文业务术语属 {{system_name}} 专属 -->
 - Be careful with Excel, PDF, PPT, and report-generation code in `{{main_module}}`; these flows are sensitive to fonts, templates, coordinates, and generated output.
-- Preserve Japanese business terms in PCF, electricity service, report, and reduction-related features unless the user requests translation.
+{{ex_business_terms_rule_en}}
 
-<!-- [{{system_name}}] 本节整节为 {{system_name}} 部署环境：manifests、azure-pipelines、prd / mieco-prd；将来由项目配置替换 -->
+<!-- [{{system_name}}] 本节整节为 {{system_name}} 部署环境：manifests、azure-pipelines、{{prod_manifests_slash}}；将来由项目配置替换 -->
 ## Deployment And Environment Rules
 
 - Treat `manifests/` and `azure-pipelines-*.yml` as environment-sensitive.
 - When changing manifests, compare the corresponding environment variants and update all required environments intentionally.
-- Do not change production manifests (`prd`, `mieco-prd`) unless explicitly requested.
+- Do not change production manifests ({{prod_manifests_code_en}}) unless explicitly requested.
 
 ## Agent Behavior
 
