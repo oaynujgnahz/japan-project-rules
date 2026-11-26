@@ -35,10 +35,10 @@ Cursor [官方文档](https://cursor.com/docs/context/rules) 将 `AGENTS.md` 列
 
 **维护原则**：硬性边界、按文件类型约束 → 写进 `.cursor/rules/`；项目结构、命令、流程索引 → 保留在本文件。
 
-<!-- [{{system_name}}] CO2MOS AI 方針、用語辞書_日英.md、UI規範.md、docs/ai-native/ 下的文档属 {{system_name}} 专属资料 -->
+<!-- [{{system_name}}] {{ex_ai_policy_comment}}用語辞書_日英.md、UI規範.md、docs/ai-native/ 下的文档属 {{system_name}} 专属资料 -->
 ## AI Native 基础整备
 
-CO2MOS AI 本格運用方針に基づく開発工程整备。详细流程、Agent 角色、MCP/Skill 映射见：
+{{ex_ai_policy_intro}}详细流程、Agent 角色、MCP/Skill 映射见：
 
 - **索引**：`docs/ai-native/README.md`
 - **Cursor Rules**：`.cursor/rules/*.mdc`（`project-core.mdc` 全局生效）
@@ -72,7 +72,7 @@ CO2MOS AI 本格運用方針に基づく開発工程整备。详细流程、Agen
 - Frontend locale files: `{{frontend_module}}/src/locale/{ja,en}/`（`zh/` 目录存在但不在维护范围，新功能不需更新 zh）
 - Kubernetes manifests: `manifests/{{manifest_envs_brace}}/`
 
-<!-- [{{system_name}}] 本节整节为 {{system_name}} 构建命令（{{build_cmd}}、Maven 模块、npm、Node v16.14.0、naive-ui patch）；将来由项目配置的 BUILD_CMD 等替换 -->
+<!-- [{{system_name}}] 本节整节为 {{system_name}} 构建命令（{{build_cmd}}、Maven 模块、npm{{node_patch_note}}）；将来由项目配置的 BUILD_CMD 等替换 -->
 ## Common Commands
 
 Run commands from the repository root unless noted.
@@ -110,9 +110,9 @@ npm run serve
 
 Frontend notes:
 
-- Node `v16.14.0` and npm `7.6.0` are configured in `{{frontend_module}}/pom.xml` for Maven builds.
+{{node_line_en}}
 - `npm run build` uses `node --max_old_space_size=4096`.
-- `postinstall` runs `patch-package`; preserve `{{frontend_module}}/patches/naive-ui+2.35.0.patch`.
+{{if_patches}}- `postinstall` runs `patch-package`; preserve {{patch_paths_code_en}}.
 
 ## Verification Expectations
 
@@ -133,7 +133,7 @@ Frontend notes:
 - Preserve existing package structure under `{{base_package}}`.
 <!-- [{{system_name}}] 对日项目要求：注释写日文或英文、禁止中文注释，以及 .cursor/hooks 中文注释检查 -->
 - This is a Japan-oriented project. New code comments should be Japanese when practical, or English when Japanese would be unclear. Do not add Chinese comments to source code. Project hook: `.cursor/hooks/` scans agent edits for Simplified-Chinese comments (see `.cursor/hooks/README.md`). The hook runs automatically only inside Cursor; agents editing outside Cursor must run it manually per edited file (see `java-backend.mdc` §注释).
-- Name new feature-specific classes after the feature/business scope they actually serve. Avoid reusing broad domain prefixes such as `Ghg` for emission result PPT/export helpers unless the class is genuinely shared with that existing GHG-specific domain.
+- Name new feature-specific classes after the feature/business scope they actually serve. Avoid reusing broad domain prefixes{{ex_broad_prefix_en}}.
 - Do not edit generated or template-like files unless the task explicitly requires it.
 - Do not commit secrets, real credentials, private keys, or production-only values. Be especially careful with `application-*.yml`, `configmap-secret.yml`, keystores, and deployment manifests.
 - Avoid adding new production dependencies unless there is a clear need and the user agrees.
@@ -146,7 +146,7 @@ Frontend notes:
 - Keep locale changes synchronized across **`ja` and `en`** when the UI text is user-visible. Do **not** add or update `{{frontend_module}}/src/locale/zh/` for new work unless explicitly requested.
 - Keep router changes consistent with `{{frontend_module}}/src/router/index.ts`, `routes-new.ts`, and `routes-classic.ts`.
 - Use existing Naive UI patterns and project styling conventions.
-- Do not remove or bypass the `patch-package` setup for Naive UI.
+{{if_patches}}- Do not remove or bypass the `patch-package` setup for Naive UI.
 
 ## Backend Rules
 

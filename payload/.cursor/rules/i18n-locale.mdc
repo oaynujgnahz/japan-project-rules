@@ -20,13 +20,13 @@ alwaysApply: false
 | 场景 | 日语 | 英语 |
 |------|------|------|
 | 按钮 | 短动词 | Save, Cancel |
-| 列头 | 名词短语 | Scope 1/2/3 保留 |
+| 列头 | 名词短语 | {{ex_column_term_example}} |
 | 错误 | です/ます 或系统体 | 完整句 + 原因 |
-| 单位 | tCO₂e | 不翻译化学式 |
+| 单位 | {{ex_unit_example}} | 不翻译化学式 |
 
 ## 禁止
 
-- 排出量 / Emissions / Emission Volume 混用
+{{ex_term_mixing_rule}}
 - 只改 ja 或只改 en
 - 为凑齐三语而去改 `locale/zh`
 - locale 外散落可见字符串

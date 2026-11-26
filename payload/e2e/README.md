@@ -1,6 +1,6 @@
 # {{system_name}} E2E（Playwright）
 
-结合测试脚本目录，配合 **Playwright MCP** 或 CI 使用（CO2MOS PPT：逐步替代 MagicPod 手工）。
+结合测试脚本目录，配合 **Playwright MCP** 或 CI 使用{{ex_test_policy_note}}。
 
 ##  setup
 

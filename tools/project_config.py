@@ -11,6 +11,7 @@
 
   python3 project_config.py <project.json> get <dotted.key>     # 取一个值（list/dict 输出 JSON，list 可加 --lines）
   python3 project_config.py <project.json> check [--need k ...]  # 只做检查
+  python3 project_config.py --self-test                         # render 规则的回归检查
   python3 project_config.py <project.json> render-payload <src_dir> <out_dir>
       # install.sh 用：把 payload/ 里的 {{占位符}}（文件内容和路径名）换成配置的值，写到 out_dir。
       # 占位符 → 配置键见 PAYLOAD_PLACEHOLDERS；缺键报错退出，不回落任何项目的值。路径名渲染成空的文件不装。
@@ -51,6 +52,8 @@ PAYLOAD_PLACEHOLDERS = {
     "error_code": "ids.error_code",                   # 错误码正则
     "java_version": "stack.java_version",             # Java 版本（如 8、17）；init 取 pom.xml 的 java.version 等
     "spring_boot_version": "stack.spring_boot_version",  # Spring Boot 版本（如 2.5.14）；init 取 pom.xml 的 parent 等
+    "node_version": "stack.node_version?",            # 前端 pom.xml（frontend-maven-plugin）的 Node 版本（如 v18.x.x）；空=不写 Node 行
+    "npm_version": "stack.npm_version?",              # 同上 npm 版本（如 7.6.0）；可空
 }
 # stack / deploy から作る派生占位符
 DERIVED_PLACEHOLDERS = {
@@ -63,11 +66,21 @@ DERIVED_PLACEHOLDERS = {
     "prod_manifest_paths_code_ja": "「`manifests/a`、`manifests/b`」",
     "prod_manifest_paths_code_slash": "「`manifests/a` / `manifests/b`」",
     "manifest_envs_brace": "deploy.manifest_envs「{a,b,c}」（1 个时不带括号）",
+    # stack.frontend_patches（patch-package 的 .patch 文件名列表，可空）/ node_version から
+    "node_patch_note": "「、Node <v>、<pkg> patch」（注释用；都空 → 空）",
+    "frontend_env_line": "project-core.mdc の「Node <v> · 保留 `<fe>/patches/<p>`。」行（都空 → 行ごと不装）",
+    "node_line_en": "AGENTS.md の Node/npm 行（node_version 空 → 行ごと不装）",
+    "patch_paths_code_en": "「`<fe>/patches/a`, `<fe>/patches/b`」",
+    "patch_names": "「<pkg> patch / …」",
+    "patch_names_note": "「、<pkg> patch…」（注释用）",
+    "if_patches": "frontend_patches が空でなければ空串、空なら その行ごと不装（行頭に置く条件）",
 }
 # examples（顶层，必需）：项目专属的范例文本。payload の {{ex_<id>}} が examples.<id> になる。
-# 值是 Markdown 片段（可含其他 {{占位符}}）。id 分两种：
-#   inline（EXAMPLE_INLINE_IDS）：嵌在表格行/句子里，空串 → 渲染成「—」，行保留
+# 值是 Markdown 片段（可含其他 {{占位符}}）。id 分三种：
+#   inline（EXAMPLE_INLINE_IDS）：表格单元格等，空串 → 渲染成「—」，行保留
+#   fragment（EXAMPLE_FRAGMENT_IDS）：句子里可省的一段（前缀、括号注），空串 → 什么都不写，行保留
 #   block（其余）：独占一行（可多行），空串 → 那一行不装
+#   inline / fragment 的值不能含换行和「|」（会破坏表格/句子；违反就报错）
 # 下面每个 id 都必须有（没有就报错），多余的 id 也报错（防拼错）。
 EXAMPLE_IDS = {
     "feature_name": "[inline] orchestrator.md 参数表 {機能} 的例子（含反引号）",
@@ -98,11 +111,41 @@ EXAMPLE_IDS = {
     "glossary_core": "用語辞書_日英.md「核心概念」一节（标题＋表，末尾带空行）",
     "glossary_proper_nouns": "用語辞書_日英.md 维护规则第 3 条（固有名）",
     "glossary_reference": "用語辞書_日英.md 参照文件里的范例设计书行",
+    "ai_policy_comment": "[fragment] AGENTS.md「AI Native 基础整备」注释里的方针名（含末尾「、」）",
+    "ai_policy_intro": "[fragment] AGENTS.md「AI Native 基础整备」开头一句（方针出处）",
+    "ai_policy_version": "docs/ai-native/README.md 开头的方针出处一行（末尾带空行）",
+    "retro_ref": "[fragment] UI規範.md / 用語辞書_日英.md 开头「对应 … 复盘：」",
+    "flow_policy_ref": "[fragment] 開発フロー.md「对应 … 方針 Slide …：」",
+    "test_policy_note": "[fragment] e2e/README.md 开头一句末尾的括号注",
+    "glossary_domain": "[fragment] 用語辞書_日英.md 标题里系统名后的业务领域（含开头「 / 」）",
+    "review_incident": "[fragment] review.mdc §2 标题里的过去问题（含开头「，」）",
+    "review_incident_comment": "review.mdc §2 标题前的注释行",
+    "ut_template_domain": "[fragment] 単体テスト項目テンプレート/README.md 里参考文件的业务名（前后带空格，如「 XXX 」）",
+    "ut_template_source": "[inline] 単体テスト項目テンプレート/README.md 参考文件名（含反引号）",
+    "broad_prefix_ja": "[fragment] java-backend.mdc / project-core.mdc「避免滥用 … 宽泛前缀」的例（前带空格，如「 `Xxx` 等」）",
+    "broad_prefix_en": "[fragment] AGENTS.md「Avoid reusing broad domain prefixes …」的例（前带空格）",
+    "term_mixing_example": "[fragment] 用語辞書_日英.md 维护规则第 2 条末尾的混用例（含开头「，」）",
+    "term_mixing_rule": "i18n-locale.mdc §禁止 里的术语混用例一行",
+    "glossary_units": "用語辞書_日英.md「单位与格式」一节（标题＋表，末尾带空行）",
+    "api_path_example": "[inline] 設計書記述規範.md API path 的例子（含反引号）",
+    "column_term_example": "[inline] i18n-locale.mdc UI 场景表「列头」英语列的例",
+    "unit_example": "[inline] i18n-locale.mdc UI 场景表「单位」日语列的例",
 }
 EXAMPLE_INLINE_IDS = ("feature_name", "feature_docs", "feature_ppt", "scope_example",
                       "spec_reference", "field_example", "db_example", "screen_field_example", "file_path_example",
-                      "permission_example", "menu_path_example", "domain_term")
+                      "permission_example", "menu_path_example", "domain_term",
+                      "ut_template_source", "api_path_example", "column_term_example", "unit_example")
+EXAMPLE_FRAGMENT_IDS = ("ai_policy_comment", "ai_policy_intro", "retro_ref", "flow_policy_ref", "test_policy_note",
+                        "glossary_domain", "review_incident", "ut_template_domain", "broad_prefix_ja", "broad_prefix_en",
+                        "term_mixing_example")
 EXAMPLE_EMPTY_INLINE = "—"
+
+
+class _Drop(str):
+    """この値の占位符を含む行は装さない（block 型 examples の空串、if_*、行単位の派生値の空）"""
+
+
+DROP = _Drop("")
 # modules（顶层，必需）から作る占位符。各要素 {"name", "kind", "role"}，kind は MODULE_KINDS のどれか。
 # kind=api のうち "main": true がちょうど 1 つ、kind=frontend がちょうど 1 つ必要。
 MODULE_KINDS = ("api", "lib", "service", "frontend", "build")
@@ -120,7 +163,7 @@ MODULE_PLACEHOLDERS = {
     "wrapper_code_before": "「、`<build_wrapper>`」（空なら空）",
 }
 NEEDS["install"] += list(dict.fromkeys(PAYLOAD_PLACEHOLDERS.values())) + [
-    "modules", "deploy.manifest_envs", "deploy.prod_manifests", "examples"]
+    "modules", "deploy.manifest_envs", "deploy.prod_manifests", "stack.frontend_patches?", "examples"]
 PH_TOKEN_RE = re.compile(r"\{\{([a-z_]+)\}\}")
 
 
@@ -235,8 +278,28 @@ def payload_values(cfg: dict) -> dict:
     vals.update(module_values(get(cfg, "modules"), vals))
     vals.update(stack_values(vals))
     vals.update(deploy_values(get(cfg, "deploy.manifest_envs"), get(cfg, "deploy.prod_manifests")))
+    vals.update(frontend_values(vals, get(cfg, "stack.frontend_patches")))
     vals.update(example_values(get(cfg, "examples")))
     return vals
+
+
+def frontend_values(vals: dict, patches) -> dict:
+    if not isinstance(patches, list) or not all(isinstance(x, str) and x.endswith(".patch") and "/" not in x for x in patches):
+        die("stack.frontend_patches は patch-package の .patch ファイル名のリスト（無ければ []）")
+    n, m, fe = vals["node_version"], vals["npm_version"], vals["frontend_module"]
+    pkgs = [x[:-len(".patch")].rsplit("+", 1)[0].replace("+", "/") for x in patches]  # @scope+pkg+1.0.patch → @scope/pkg
+    paths = [f"`{fe}/patches/{x}`" for x in patches]
+    env = ([f"Node {n}"] if n else []) + (["保留 " + "、".join(paths)] if paths else [])
+    return {
+        "node_patch_note": (f"、Node {n}" if n else "") + "".join(f"、{p} patch" for p in pkgs),
+        "frontend_env_line": " · ".join(env) + "。\n" if env else DROP,
+        "node_line_en": (f"- Node `{n}`" + (f" and npm `{m}` are" if m else " is")
+                         + f" configured in `{fe}/pom.xml` for Maven builds.") if n else DROP,
+        "patch_paths_code_en": ", ".join(paths),
+        "patch_names": " / ".join(f"{p} patch" for p in pkgs),
+        "patch_names_note": "".join(f"、{p} patch" for p in pkgs),
+        "if_patches": "" if patches else DROP,
+    }
 
 
 def stack_values(vals: dict) -> dict:
@@ -283,7 +346,14 @@ def example_values(ex) -> dict:
             die(f"examples.{k} は文字列（空串 = その行を装さない）")
         if "{{ex_" in v:
             die(f"examples.{k} の中に {{{{ex_…}}}} は書けない")
-    return {f"ex_{k}": (EXAMPLE_EMPTY_INLINE if k in EXAMPLE_INLINE_IDS and v == "" else v) for k, v in got.items()}
+        if k in EXAMPLE_INLINE_IDS + EXAMPLE_FRAGMENT_IDS and ("\n" in v or "|" in v):
+            die(f"examples.{k} は inline/fragment 型：改行と「|」は書けない（表格・句子が壊れる）: {v!r}")
+    out = {}
+    for k, v in got.items():
+        if v == "":
+            v = EXAMPLE_EMPTY_INLINE if k in EXAMPLE_INLINE_IDS else ("" if k in EXAMPLE_FRAGMENT_IDS else DROP)
+        out[f"ex_{k}"] = v
+    return out
 
 
 def module_values(mods, vals: dict) -> dict:
@@ -323,21 +393,29 @@ def _unknown(text: str, vals: dict, where: str):
         die(f"{where}: 未定义的 payload 占位符 {unknown}（在 PAYLOAD_PLACEHOLDERS 里登记）")
 
 
+def _drop_lines(text: str, vals: dict, where: str, expand_ex: bool) -> str:
+    drops = {k for k, v in vals.items() if isinstance(v, _Drop)}
+    out = []
+    for line in re.split(r"(?<=\n)", text):  # \n だけで分ける（splitlines は \r 等でも切る）
+        toks = [m.group(1) for m in PH_TOKEN_RE.finditer(line)]
+        blk = [e for e in toks if e.startswith("ex_") and e[3:] not in EXAMPLE_INLINE_IDS + EXAMPLE_FRAGMENT_IDS]
+        if blk and line.strip() != "{{%s}}" % blk[0]:
+            die(f"{where}: block 型 {{{{{blk[0]}}}}} は 1 行に単独で書く（文中なら EXAMPLE_INLINE_IDS / EXAMPLE_FRAGMENT_IDS に登録）")
+        if any(t in drops for t in toks):
+            continue
+        out.append(PH_TOKEN_RE.sub(lambda m: vals[m.group(1)] if m.group(1).startswith("ex_") else m.group(0), line)
+                   if expand_ex else line)
+    return "".join(out)
+
+
 def _render(text: str, vals: dict, where: str) -> str:
-    """先展开 {{ex_*}}（block id 值为空 → 那一行不装；inline id 空 → —），再替换其余占位符（examples 的值里也可以有）"""
+    """先展开 {{ex_*}}，再替换其余占位符（examples 的值里也可以有）。
+    值为 DROP 的占位符（block 型 examples 的空串、if_*、行单位派生值的空）所在的行不装（examples 展开后再查一次）。"""
     _unknown(text, vals, where)
-    if "{{ex_" in text:
-        out = []
-        for line in re.split(r"(?<=\n)", text):  # \n だけで分ける（splitlines は \r 等でも切る）
-            ex = [m.group(1) for m in PH_TOKEN_RE.finditer(line) if m.group(1).startswith("ex_")]
-            blk = [e for e in ex if e[3:] not in EXAMPLE_INLINE_IDS]
-            if blk and line.strip() != "{{%s}}" % blk[0]:
-                die(f"{where}: block 型 {{{{{blk[0]}}}}} は 1 行に単独で書く（文中なら EXAMPLE_INLINE_IDS に登録）")
-            if any(vals[e] == "" for e in blk):
-                continue
-            out.append(PH_TOKEN_RE.sub(lambda m: vals[m.group(1)] if m.group(1).startswith("ex_") else m.group(0), line))
-        text = "".join(out)
+    if PH_TOKEN_RE.search(text):
+        text = _drop_lines(text, vals, where, True)
         _unknown(text, vals, where)
+        text = _drop_lines(text, vals, where, False)
     return PH_TOKEN_RE.sub(lambda m: vals[m.group(1)], text)
 
 
@@ -371,7 +449,44 @@ def render_payload(cfg: dict, src: Path, dst: Path) -> int:
     return n
 
 
+def self_test() -> int:
+    """render 规则的回归检查（python3 tools/project_config.py --self-test）"""
+    def exits(fn) -> bool:
+        try:
+            fn()
+        except ConfigError as e:
+            return e.code == 2
+        return False
+    blank = {k: "" for k in EXAMPLE_IDS}
+    vals = example_values(blank)
+    vals.update({"frontend_module": "fe", "node_version": "", "npm_version": ""})
+    vals.update(frontend_values(vals, []))
+    inl, frg, blk = EXAMPLE_INLINE_IDS[0], EXAMPLE_FRAGMENT_IDS[0], next(k for k in EXAMPLE_IDS
+                                                                          if k not in EXAMPLE_INLINE_IDS + EXAMPLE_FRAGMENT_IDS)
+    checks = [
+        ("examples id は [a-z_]+（占位符の正規表現に合う）", all(re.fullmatch(r"[a-z_]+", k) for k in EXAMPLE_IDS)),
+        ("inline 空 → —、行保留", _render(f"| a | {{{{ex_{inl}}}}} |\n", vals, "t") == "| a | — |\n"),
+        ("fragment 空 → 空串、行保留", _render(f"x{{{{ex_{frg}}}}}y\n", vals, "t") == "xy\n"),
+        ("block 空 → 行不装", _render(f"a\n{{{{ex_{blk}}}}}\nb\n", vals, "t") == "a\nb\n"),
+        ("if_patches 空 → 行不装", _render("a\n{{if_patches}}- keep {{patch_names}}\nb\n", vals, "t") == "a\nb\n"),
+        ("frontend 都空 → 行不装", _render("a\n{{frontend_env_line}}\n{{node_line_en}}\nb\n", vals, "t") == "a\nb\n"),
+        ("block 文中 → exit 2", exits(lambda: _render(f"see {{{{ex_{blk}}}}}\n", vals, "t"))),
+        ("未定义占位符 → exit 2", exits(lambda: _render("{{no_such_key}}\n", vals, "t"))),
+    ]
+    for k in (inl, frg):
+        for bad in ("a\nb", "a | b"):
+            checks.append((f"{k}={bad!r} → exit 2", exits(lambda: example_values(dict(blank, **{k: bad})))))
+    fv = frontend_values({"frontend_module": "fe", "node_version": "v1", "npm_version": "2"}, ["@s+p+1.0.patch"])
+    checks.append(("patch 名 @s+p+1.0 → @s/p", fv["patch_names"] == "@s/p patch"))
+    bad = [n for n, ok in checks if not ok]
+    for n, ok in checks:
+        print(("OK  " if ok else "NG  ") + n)
+    return 1 if bad else 0
+
+
 def _main(argv: List[str]) -> int:
+    if argv[:1] == ["--self-test"]:
+        return self_test()
     if len(argv) >= 4 and argv[1] == "render-payload":
         cfg = load(argv[0], "install")
         n = render_payload(cfg, Path(argv[2]), Path(argv[3]))

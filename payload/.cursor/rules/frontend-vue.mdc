@@ -76,6 +76,6 @@ alwaysApply: false
 ## 禁止
 
 - 硬编码 UI 字符串（locale 外）
-<!-- [{{system_name}}] routes-new / routes-classic、naive-ui patch 属 {{system_name}} 前端 -->
+<!-- [{{system_name}}] routes-new / routes-classic{{patch_names_note}} 属 {{system_name}} 前端 -->
 - 只改 `routes-new` 漏 `routes-classic`
-- 移除或绕过 `patch-package` / naive-ui patch
+{{if_patches}}- 移除或绕过 `patch-package` / {{patch_names}}

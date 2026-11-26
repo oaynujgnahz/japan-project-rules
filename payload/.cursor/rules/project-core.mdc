@@ -16,7 +16,7 @@ Java {{java_version}} / Spring Boot {{spring_boot_version}} + Vue 3 + TS + Vite�
 
 路径：Java `{{base_package}}.*` · mapper/SQL `resources/mapper/` · 前端 `{{frontend_module}}/src/{apis,views,router,store,locale}` · 设计书 `docs/{機能}/`。
 
-<!-- [{{system_name}}] 本节整节为 {{system_name}} 构建命令（{{build_cmd}}、frontend npm、Node v16.14.0、naive-ui patch）；将来由项目配置的 BUILD_CMD 替换 -->
+<!-- [{{system_name}}] 本节整节为 {{system_name}} 构建命令（{{build_cmd}}、frontend npm{{node_patch_note}}）；将来由项目配置的 BUILD_CMD 替换 -->
 ## Commands
 
 ```bash
@@ -24,14 +24,13 @@ Java {{java_version}} / Spring Boot {{spring_boot_version}} + Vue 3 + TS + Vite�
 cd {{frontend_module}} && npm run build
 ```
 
-Node v16.14.0 · 保留 `{{frontend_module}}/patches/naive-ui+2.35.0.patch`。
-
+{{frontend_env_line}}
 ## Coding（全局）
 
 <!-- [{{system_name}}] Java {{java_version}} only 属 {{system_name}} 技术栈；注释日/英、禁止中文注释为对日项目要求 -->
 - 先读既存，minimal diff；Java {{java_version}} only；不擅自升级依赖
 - 注释日/英，解释 **why**；禁止中文注释
-- 新类按业务域命名；勿滥用 `Ghg` 等宽泛前缀
+- 新类按业务域命名；勿滥用{{ex_broad_prefix_ja}}宽泛前缀
 - 不编辑生成/模板文件（除非任务要求）；新生产依赖需用户同意
 
 ## 禁止

@@ -2,7 +2,7 @@
 name: md-design-doc
 description: >-
   Authors and revises software design documents (設計書) in Markdown: one folder per
-  feature under project docs/, Future 06/07 structure, OpenAPI split, CMPF metadata.
+  feature under project docs/, Future 06/07 structure, OpenAPI split, project metadata.
   Use when the user asks for 設計書, design doc, 機能設計, API設計, 画面設計,
   requirements-to-design, or writing/updating `.md` design documentation.
 ---
@@ -36,9 +36,9 @@ Structure follows [Future Markdown 設計ドキュメント規約](https://futur
 
 | 规则 | 示例 |
 |------|------|
-| 与功能/画面领域一致，可读 | `PCF算定_Excel取込`、`报告出力_排出量PPT` |
-| 不用模块名代替功能名 | ❌ `carbonapi` ✅ `電力データ連携_申請一覧` |
-| 同一功能只保留一个文件夹 | 勿拆成 `docs/PCF/` 与 `docs/Excel取込/` |
+| 与功能/画面领域一致，可读 | `{業務領域}_{機能名}`（如 `{業務}_Excel取込`、`{帳票名}出力`） |
+| 不用模块名代替功能名 | ❌ `{module}`（构建模块名） ✅ `{業務領域}_{画面名}` |
+| 同一功能只保留一个文件夹 | 勿拆成 `docs/{業務領域}/` 与 `docs/{機能名}/` |
 
 ### 创建时机
 
@@ -74,7 +74,7 @@ Structure follows [Future Markdown 設計ドキュメント規約](https://futur
 | 校验一覧 | `docs/{機能}/{对象}_校验一覧.md` |
 | **処理フロー** | `docs/{機能}/処理フロー詳細.md`（推荐；业务语言逐步流程） |
 
-## 業務記述・処理フロー（CMPF 必守）
+## 業務記述・処理フロー（必守）
 
 写 **触发 → 输入 → 处理 → 输出 → 边界** 时，遵守仓库内  
 `docs/ai-native/設計書記述規範.md`：
@@ -85,7 +85,7 @@ Structure follows [Future Markdown 設計ドキュメント規約](https://futur
 - **理解现状摘要**：仅表主键 + 代码入口；流程链到処理フロー詳細
 - **実装対照**：代码路径仅放附录
 
-范例：`docs/PCF算定_UIUX改善/処理フロー詳細.md`
+范例：`docs/{機能}/処理フロー詳細.md`（项目里已完成的范例见 `docs/ai-native/設計書記述規範.md`）
 
 ## Future 06 — 画面設計書（§3 或 `docs/{機能}/06_画面設計書/`）
 
@@ -116,7 +116,7 @@ Structure follows [Future Markdown 設計ドキュメント規約](https://futur
 | **ビジネスロジック（完整）** | 见下节 **[API 业务逻辑完整度要求](#api-业务逻辑完整度要求必守)** |
 | DB 項目 | **取得**（表+抽出条件）/ **登録** / **更新** |
 | エラー処理 | Pattern、Description、recovery 或 messageKey 表 |
-| 使用 SQL | SQL-01, …（CMPF 项目习惯） |
+| 使用 SQL | SQL-01, …（项目习惯） |
 
 ### API 业务逻辑完整度要求（必守）
 
@@ -161,7 +161,7 @@ Structure follows [Future Markdown 設計ドキュメント規約](https://futur
 - Settings：来源表/实体  
 - Note：加工・計算逻辑
 
-**无 OpenAPI 时**（CMPF 遗留）：在 MD 内写完整请求/响应表（项番・论理名・物理名・必须 ○△）。
+**无 OpenAPI 时**（遗留功能）：在 MD 内写完整请求/响应表（项番・论理名・物理名・必须 ○△）。
 
 ## Document Conventions
 
@@ -233,4 +233,4 @@ Structure follows [Future Markdown 設計ドキュメント規約](https://futur
 - 目录与职责：[future-06-07.md](future-06-07.md)
 - 模板：[templates.md](templates.md)（F=06、G=07、A=単文件）
 - 示例：[examples.md](examples.md)
-- CMPF 参考（迁移目标结构）：`docs/PCF算定_Excel取込/機能設計書.md`；遗留：`docs/PCF算定_Excel取込出力_設計書.md`
+- 迁移目标结构：`docs/{機能}/機能設計書.md`；遗留（根下平铺）：`docs/{機能}_設計書.md`

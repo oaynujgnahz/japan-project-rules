@@ -14,19 +14,19 @@ description: >-
 - `example/`：脱敏样例
 
 ## 项目参数（取自 project.json；个人环境的值放个人配置，不提交）
-| 参数 | 配置键 | CMPF 的值（例） |
+| 参数 | 配置键 | 示例项目的值（例） |
 |---|---|---|
 | 代码仓库（只读） | 个人配置 | 各人本地路径 |
 | 需求 PPT 位置 | 个人配置 / 用户提供 | 用户提供 |
 | 确认事项台账目录 | `ledger_dir` | 按项目配置 |
-| 系统名 | `design.system_name` | `CMPF` |
-| 错误码格式 | `ids.error_code` | `CMPF\d{4}-[EIW]` |
+| 系统名 | `design.system_name` | `XXXX` |
+| 错误码格式 | `ids.error_code` | `XXXX\d{4}-[EIW]` |
 | 画面 ID 规则 | `ids.screen_id` | `SCR-[A-Za-z0-9][\w-]*[A-Za-z0-9]` |
 | API ID 规则 | `ids.api_id` | `API-[A-Za-z0-9][\w-]*[A-Za-z0-9]` |
 | 语言 | `i18n.languages` | `ja`, `en` |
 | locale 目录 | `i18n.locale_dir` | `frontend/src/locale` |
 | 术语辞书 | `design.glossary` | `docs/ai-native/用語辞書_日英.md` |
-配置里没有的值先读代码确认；还不明就写进要確認事項，不照 CMPF 猜、不自己编。
+配置里没有的值先读代码确认；还不明就写进要確認事項，不照示例项目猜、不自己编。
 
 ## 核心规则（详见 RULES.md）
 1. 一功能一套：表紙→改訂履歴→目次→機能概要→要件対応表→現状分析→処理フロー→業務ルール→画面一覧→各画面（每画面一张，sheet 名＝画面 ID）→API一覧→各 API（每 API 一张，sheet 名＝API ID）→テーブル定義→チェック・エラー一覧→SQL一覧→受入基準→要確認事項→実装対照。
@@ -35,8 +35,8 @@ description: >-
 4. PPT 是画面布局的第一来源；每个 SCR 写「要件来源（PPT 文件 + slide/注釈）」；改修画面必须有 PPT vs 現状 差异表；不能从旧代码推断布局。
 5. 每条设计可追溯：要件対応表 把 slide/注釈 → 设计 ID → 既存代码 → 状态（✅/⏳/△）对起来。PPT 没写但必须定的，写「slide X を設計で具体化」。
 6. PPT 与代码冲突、PPT 不明确 → 不编造，写 要確認事項（问题/选项/影响/暂定方针/状态），设计按暂定方针写并标 Q 编号（只在内部詳細設計書和 MD 里）。
-7. ID：画面按 `ids.screen_id`（CMPF 例：SCR-B-xx-xx-xx）、API 按 `ids.api_id`（CMPF 例：API-B-xx-xx-xx-xx）、BR-xx、AC-xx、BL-xx、SQL-xx、F-xx、Q-x；错误码按 `ids.error_code`（含 -E/-I/-W），文言取代码 locale 里正文语言（`i18n.languages` 第一个，CMPF 例：ja）的文件。BR/AC/Q 编号不复用，删除的标「欠番」。
-8. 受入基準每条可测试；i18n 按 `i18n.languages` 写（CMPF 例：ja/en），画面 sheet 的文言列也按它生成；术语按项目术语辞书。
+7. ID：画面按 `ids.screen_id`（例：SCR-B-xx-xx-xx）、API 按 `ids.api_id`（例：API-B-xx-xx-xx-xx）、BR-xx、AC-xx、BL-xx、SQL-xx、F-xx、Q-x；错误码按 `ids.error_code`（含 -E/-I/-W），文言取代码 locale 里正文语言（`i18n.languages` 第一个，例：ja）的文件。BR/AC/Q 编号不复用，删除的标「欠番」。
+8. 受入基準每条可测试；i18n 按 `i18n.languages` 写（例：ja/en），画面 sheet 的文言列也按它生成；术语按项目术语辞书。
 9. 语言：sheet 名/表头/ID 日文；正文默认日文（用户要求可中文）；PPT 原文、错误 message、UI 文言不翻译。
 
 ## 确认事项台账

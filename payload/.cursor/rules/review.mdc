@@ -19,8 +19,8 @@ alwaysApply: true
 - [ ] 单体 Case 的 `試験観点` 与模板一致，汇总/公式/下拉框可用
 - [ ] 权限/公司 ID 过滤与既有同类 API 一致
 
-<!-- [{{system_name}}] 标题中的「防 ESG 上传类问题」指 {{system_name}} 过去出过的问题；本节比对项本身通用 -->
-## 2. 既存逻辑比对（必做，防 ESG 上传类问题）
+{{ex_review_incident_comment}}
+## 2. 既存逻辑比对（必做{{ex_review_incident}}）
 
 - [ ] 已读同类 Service/Controller/ Vue 实现并列出参照文件
 - [ ] **主键 / 唯一键** 与 insert/update 分支正确（无错误覆盖）

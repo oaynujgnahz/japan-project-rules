@@ -13,7 +13,7 @@ alwaysApply: false
 - 包：`{{base_package}}.{module}.*`（controller / service / mapper / dto / entity）
 - MyBatis XML：`{module}/src/main/resources/mapper/`
 - SQL 脚本：`{{main_module}}/src/main/resources/sql/` 或根目录 `.sql`
-- 新功能类名按业务域命名，避免滥用 `Ghg` 等宽泛前缀
+- 新功能类名按业务域命名，避免滥用{{ex_broad_prefix_ja}}宽泛前缀
 
 ## 对齐要求
 

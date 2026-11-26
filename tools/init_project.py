@@ -168,6 +168,7 @@ def scan_build(root: Path) -> Dict[str, dict]:
         out["env_checks"]["evidence"] = list(out["env_checks"]["evidence"]) + ([f"{_rel(root, nv)}: {ver}"] if nv else [f"{rel}/package.json（无 .nvmrc，只检查能运行）"])
     else:
         out.setdefault("build.frontend", {"value": "", "evidence": ["无 package.json"]})
+    out.update(scan_frontend_stack(root, fe))
     # base package
     pk: Dict[str, Tuple[int, str]] = {}
     n = 0
@@ -229,6 +230,23 @@ def scan_stack(t: str, jv) -> Dict[str, dict]:
         sb = props.get(sb[2:-1])
     if sb:
         out["stack.spring_boot_version"] = {"value": sb, "evidence": [ev]}
+    return out
+
+
+def scan_frontend_stack(root: Path, fe: Optional[Path]) -> Dict[str, dict]:
+    """前端 pom.xml（frontend-maven-plugin）の nodeVersion / npmVersion と patches/*.patch（stack.*）。
+    無ければ空（Node 行・patch 行は装さない）。根拠は evidence に出す"""
+    out: Dict[str, dict] = {}
+    pom = fe / "pom.xml" if fe is not None else None
+    t = pom.read_text(encoding="utf-8", errors="replace") if pom is not None and pom.exists() else ""
+    for key, tag in (("stack.node_version", "nodeVersion"), ("stack.npm_version", "npmVersion")):
+        m = re.search(rf"<{tag}>\s*([^<\s]+)\s*</{tag}>", t)
+        out[key] = {"value": m.group(1) if m else "",
+                    "evidence": [f"{_rel(root, pom)}:{_line_of(t, m.start())} <{tag}>{m.group(1)}</{tag}>"] if m
+                    else [f"{_rel(root, pom) if t else '前端 pom.xml'} に <{tag}> なし → 空（行を装さない）"]}
+    pd = fe / "patches" if fe is not None else None
+    ps = sorted(p.name for p in pd.glob("*.patch")) if pd is not None and pd.is_dir() else []
+    out["stack.frontend_patches"] = {"value": ps, "evidence": [f"{_rel(root, pd)}/{p}" for p in ps] or ["patches/*.patch なし → []"]}
     return out
 
 
@@ -406,20 +424,23 @@ def build_questions(example: dict, scan: Dict[str, dict], loc_scan: Optional[dic
       ref=ex("modules"))
     q("examples", "required",
       "项目专属的范例文本（JSON object，id → Markdown 片段，可含 {{占位符}}）。每个 id 都要写；没有的写空串："
-      "[inline] id（表格行/句子里的例子）空 → 显示「—」、行保留；其余 block id 空 → 那一行（段）不装。"
+      "[inline] id（表格单元格等）空 → 显示「—」、行保留；[fragment] id（句子里可省的一段）空 → 不写、行保留；"
+      "其余 block id 空 → 那一行（段）不装。inline / fragment 不能含换行和「|」。"
       "id 和用途见 tools/project_config.py EXAMPLE_IDS，示例项目的写法见 example_value",
       evidence=[json.dumps(OrderedDict((k, "") for k in pc.EXAMPLE_IDS), ensure_ascii=False)],
       ref=ex("examples"))
     det = ["i18n.locale_dir", "unit_test.locale_files", "detect.file", "detect.contains", "local_only", "executable",
            "env_checks", "build.backend_test", "build.frontend", "payload.repo_name", "payload.build_cmd", "payload.base_package",
            "payload.root_artifact", "stack.java_version", "stack.spring_boot_version",
-           "deploy.manifest_envs", "deploy.prod_manifests"]
+           "deploy.manifest_envs", "deploy.prod_manifests", "stack.node_version", "stack.npm_version",
+           "stack.frontend_patches"]
     if scan:
         det += ["scan.build_tool", "scan.modules", "scan.base_package"]
     for k in det:
         s = scan.get(k)
         q(k, "detected", f"扫描结果: {k}", detected=s["value"] if s else None, evidence=s["evidence"] if s else [],
-          allow_empty=k in ("detect.contains", "build.backend_test", "build.frontend", "scan.base_package", "payload.base_package"),
+          allow_empty=k in ("detect.contains", "build.backend_test", "build.frontend", "scan.base_package", "payload.base_package",
+                           "stack.node_version", "stack.npm_version", "stack.frontend_patches"),
           ref=ex(k) if not k.startswith("scan.") else None)
     return Q
 

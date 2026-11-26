@@ -1,7 +1,6 @@
 # {{system_name}} AI Native 基础整备
 
-基于 CO2MOS AI 本格運用方針 v2。
-
+{{ex_ai_policy_version}}
 > **本地专用**：`docs/`、`.cursor/`、`AGENTS.md` 等不在 git 中、不提交到甲方仓库（见 `AGENTS.md` §本地专用）。
 > 团队分工（各 bot 负责什么）见 [開発フロー.md](./開発フロー.md) §团队分工。
 

@@ -1,6 +1,6 @@
 # 設計書规则（提炼版，多项目共用）
 
-来源：本仓库 `payload/.cursor/rules/*.mdc` 与 `payload/docs/ai-native/` 规范。项目差异（系统名、错误码格式、locale、术语辞书、模板）取自 init.sh 生成的本地 project.json（脚本用 `--config` 指定；`projects/cmpf/project.json` 只是只读示例，不能直接用），下文 CMPF 的值只是例子。
+来源：本仓库 `payload/.cursor/rules/*.mdc` 与 `payload/docs/ai-native/` 规范。项目差异（系统名、错误码格式、locale、术语辞书、模板）取自 init.sh 生成的本地 project.json（脚本用 `--config` 指定；`projects/cmpf/project.json` 只是只读示例，不能直接用），下文「例：」的值只是示例项目的例子。
 原规则是为 Markdown 写的；下面是换成 Excel 后仍然成立的部分 + 对应的 sheet。
 
 ## 1. 文档组成（一功能一套）
@@ -10,8 +10,8 @@
 | 理解现状摘要.md | 現状分析 |
 | 処理フロー詳細.md（新功能推荐必建） | 処理フロー |
 | 詳細設計書.md（背景・BR・データ摘要・API/画面一览・权限・风险） | 機能概要 / 業務ルール / 画面一覧 / API一覧 |
-| 06_画面設計書/{画面ID}.md（每画面一份） | 每画面一张 sheet（sheet 名＝画面 ID，CMPF 例：`SCR-...`） |
-| 07_API設計書/{API ID}.md（每 API 一份）+ openapi.yaml | 每 API 一张 sheet（sheet 名＝API ID，CMPF 例：`API-...`；契约正本仍是 openapi.yaml） |
+| 06_画面設計書/{画面ID}.md（每画面一份） | 每画面一张 sheet（sheet 名＝画面 ID，例：`SCR-...`） |
+| 07_API設計書/{API ID}.md（每 API 一份）+ openapi.yaml | 每 API 一张 sheet（sheet 名＝API ID，例：`API-...`；契约正本仍是 openapi.yaml） |
 | 08_データモデル.md | テーブル定義 |
 | 校验/错误码对照（詳細設計書 §4/§9） | チェック・エラー一覧 |
 | SQL 一览 | SQL一覧 |
@@ -29,9 +29,9 @@
 - OpenAPI 已定义的字段不在 API 设计里重复（除非 openapi 不存在/本次无 openapi，则写全）。
 
 ## 3. ID / 命名
-- 画面 ID 按 `ids.screen_id`（CMPF 例：`SCR-{B-xx-xx-xx}`）；API ID 按 `ids.api_id`（CMPF 例：`API-{B-xx-xx-xx-xx}`）；文书编号格式按 `design.doc_no_format`（CMPF 例：`B04-G-xxx-DD`）。gen_design_xlsx.py 的 lint 按这两个正则整串检查。
+- 画面 ID 按 `ids.screen_id`（例：`SCR-{B-xx-xx-xx}`）；API ID 按 `ids.api_id`（例：`API-{B-xx-xx-xx-xx}`）；文书编号格式按 `design.doc_no_format`（例：`B04-G-xxx-DD`）。gen_design_xlsx.py 的 lint 按这两个正则整串检查。
 - 业务规则 `BR-01…`；验收 `AC-01…`（可带域前缀 `AC-AV-01`）；API 内步骤 `BL-01…`；SQL `SQL-01…`；风险 `R1…`；待确认 `Q1…`；処理フロー `F-01…`。
-- 错误码格式按 `ids.error_code`（CMPF 例：`CMPF\d{4}-[EIW]`，-I 信息 / -W 警告也要列）；文案以 `i18n.locale_dir` 下正文语言（`i18n.languages` 第一个，CMPF 例：ja）的 message 为准。
+- 错误码格式按 `ids.error_code`（例：`XXXX\d{4}-[EIW]`，-I 信息 / -W 警告也要列）；文案以 `i18n.locale_dir` 下正文语言（`i18n.languages` 第一个，例：ja）的 message 为准。
 - 记号：○ 必须 / △ 条件必须 / × 不做·不传 / ✅ 已实装 / ⏳ 设计有·未实装（状态列里 △ = 与要件有差异）。
 
 ## 4. 追溯（PPT 优先）
@@ -53,7 +53,7 @@
 - 画面：概要（目的/入口/布局形态/权限）、布局（ASCII 或 PPT 截图，不写颜色像素）、画面項目（项番/项目/物理名/组件/RW/必须/校验）、遷移、イベント（操作/触发/API/请求要点/成功/失败）、バリデーション（规则/时机/messageKey）、i18n（ja+en，不需要 zh）、PPT差异、実装状態サマリ、実装詳細。
 - API：处理概要（1～3 句）、请求/响应、认证（Bearer Keycloak）+ 公司 ID、BL 表（条件/处理/失败）、DB 項目（SELECT 条件；INSERT/UPDATE 字段）、エラー処理（错误码/条件/画面表现）、与其他 API/批处理关系、テスト観点。
 - テーブル：列名/型/NULL/默认/说明 + 索引/唯一约束 + Entity/Mapper + 迁移脚本（位置按该项目代码确认）+ 旧数据 NULL 的处理。
-- 受入基準：每条都要可测试（通过条件可判定），优先级 Must/Should；非功能：权限、多语言（按 `i18n.languages`，CMPF 例：ja/en）、错误处理。
+- 受入基準：每条都要可测试（通过条件可判定），优先级 Must/Should；非功能：权限、多语言（按 `i18n.languages`，例：ja/en）、错误处理。
 - 术语：ja↔en 按 `design.glossary` 指定的术语辞书（CMPF 例：排出量=Emissions、取込=Import、出力=Export、拠点=Site …），同一概念全局统一。
 
 ## 7. 流程与评审（workflow.mdc / review.mdc）

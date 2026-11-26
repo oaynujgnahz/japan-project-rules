@@ -57,11 +57,11 @@
 - シーケンス：**PlantUML** `!theme toy` 或 Mermaid
 - システム構成：draw.io（`.drawio.svg`）可放在 `docs/{機能}/` 下
 
-## 4. CMPF 遗留
+## 4. 遗留文档迁移
 
 | 旧路径 | 新路径（推荐） |
 |--------|----------------|
-| `docs/PCF算定_Excel取込出力_設計書.md` | `docs/PCF算定_Excel取込/機能設計書.md` |
-| `docs/PCF算定_Excel取込_表格チェック一覧.md` | `docs/PCF算定_Excel取込/PCF活動量情報_校验一覧.md` |
+| `docs/{機能名}_設計書.md` | `docs/{機能名}/機能設計書.md` |
+| `docs/{機能名}_表格チェック一覧.md` | `docs/{機能名}/{対象}_校验一覧.md` |
 
 迁移时保留旧文件或加 README 重定向，由用户决定；**新規一律用功能文件夹**。
