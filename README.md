@@ -44,6 +44,21 @@ python3 tools/design-xlsx/export_api.py docs/{機能}/design.json
 
 详细用法见各目录的 `README.md`。
 
+## 用 Grok Bot 时怎么装
+
+Grok Bot 的技能只在同一个账号的 bot 之间共用，同事的 bot 读不到别人的技能，也不会自己去读本仓库。每个人要给自己的 bot 装一次：
+
+1. **clone 本仓库**：让 bot 在它自己的电脑上 clone 到固定目录，建议 `/workspace/japan-project-rules`。仓库是私有的话，要先用你自己的 GitHub 账号授权 bot，这一步只能本人做。
+2. **导入技能**：让 bot 把下面两份 SKILL.md 存成它自己的技能，并在技能里把相对路径换成第 1 步的绝对路径（例：`tools/design-xlsx/` → `/workspace/japan-project-rules/tools/design-xlsx/`）。
+   - `skills/design-doc-xlsx/`（SKILL.md + RULES.md）：詳細設計書 / 对外设计书
+   - `skills/unit-test-xlsx/SKILL.md`：単体テスト項目
+   - `skills/cmpf-report-file-io/`、`skills/md-design-doc/` 还没通用化，先不要导入。
+3. **项目配置**：项目差异（系统名、错误码格式、locale 目录、模板）都在 `projects/<项目>/project.json`。`ledger_dir`（确认事项台账目录）留空，按自己的环境填。没有你的项目时，照 `projects/cmpf/project.json` 复制一份改。
+4. **bot 说明**：bot 说明里不要写别人的路径。代码目录、技能名、台账目录都换成自己的。
+5. **依赖**：`python3 -m pip install -r tools/design-xlsx/requirements.txt`（openpyxl、python-pptx；`read_pptx.py --render` 另需 LibreOffice 和 poppler）。
+
+装完先用 `python3 tools/design-xlsx/gen_design_xlsx.py --schema` 拿骨架，填上 `meta.system` 跑一次，能生成 xlsx 就说明装好了。
+
 ## 日常使用
 
 - 先读 `docs/ai-native/README.md`（总索引）和 `TEAM_ONBOARDING.md`。
