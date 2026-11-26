@@ -76,14 +76,111 @@
   "ledger_dir": "/home/box/cmpf-ledger",
   "design": {
     "_doc": {
-      "doc_root": "docs/{機能}/v{版本}_{日期}/",
-      "layout": "TODO(设计书): sheet names / row anchors now hard-coded in export_scr.py:14, export_api.py:13"
+      "system_name": "表紙・各 sheet 页眉的システム名。gen_design_xlsx.py 的 meta.system 取这个值；没填时脚本报错，不再默认 CMPF",
+      "doc_no_format": "文書番号格式（表紙）",
+      "detail_template": "内部詳細設計書的空模板，用 gen_design_xlsx.py --blank --system <system_name> 生成",
+      "screen_template": "对外画面設計書的公司模板（export_scr.py）",
+      "api_template": "对外 API設計書的公司模板（export_api.py）",
+      "glossary": "术语辞书；项目没有就列为要確認事項",
+      "layout.screen.sheets": "export_scr.py:15 BASE",
+      "layout.screen.item_cols": "export_scr.py:17-19 ITEM_COLS",
+      "layout.screen.header_cells": "export_scr.py:22-25 hdr()",
+      "layout.screen.layout_rows": "export_scr.py:28-31 layout()",
+      "layout.api.proto_rows": "export_api.py:15-26 R_* 原型行号",
+      "layout.api.item_header": "export_api.py:27 H_ITEM",
+      "_note": "layout 目前只是把脚本里写死的值记下来，脚本还没读它；换公司模板时先改这里，再改脚本让它读配置。错误码格式用顶层 ids.error_code，台账用顶层 ledger_dir",
+      "doc_root": "docs/{機能}/v{版本}_{日期}/"
     },
     "doc_root": "docs",
     "screen_template": "tools/design-xlsx/templates/画面設計書_模板.xlsx",
     "api_template": "tools/design-xlsx/templates/API設計書_模板.xlsx",
     "glossary": "docs/ai-native/用語辞書_日英.md",
-    "layout": {}
+    "layout": {
+      "screen": {
+        "sheets": [
+          "レイアウト",
+          "画面項目",
+          "画面操作詳細"
+        ],
+        "item_cols": {
+          "group": "C",
+          "name": "J",
+          "widget": "Q",
+          "physical": "X",
+          "event": "AB",
+          "fixed": "AF",
+          "io": "AJ",
+          "required": "AL",
+          "validation": "AP",
+          "max_length": "AT",
+          "min": "AX",
+          "max": "BA",
+          "unit": "BD",
+          "format": "BJ",
+          "initial": "BO",
+          "sort": "BT",
+          "remarks": "CD"
+        },
+        "header_cells": {
+          "date": {
+            "lay": "AW2",
+            "item": "BF2",
+            "op": "AW2"
+          },
+          "author": {
+            "lay": "BD2",
+            "item": "BM2",
+            "op": "BD2"
+          }
+        },
+        "layout_rows": {
+          "summary": "A6",
+          "blank_row": 8,
+          "start": 10
+        }
+      },
+      "api": {
+        "proto_rows": {
+          "blank": 4,
+          "sec": 5,
+          "url": 6,
+          "name": 7,
+          "req": 9,
+          "req_h": 10,
+          "req_row": 11,
+          "res": 24,
+          "res_h": 25,
+          "res_row": 26,
+          "res_child": 27,
+          "ops": 49,
+          "step": 51,
+          "text": 52,
+          "label": 53,
+          "tbl_h": 54,
+          "tbl_row": 55,
+          "sql_h": 66,
+          "sql_row": 67,
+          "from": 72,
+          "join": 88,
+          "cond1": 75,
+          "cond": 95,
+          "set_h": 203,
+          "set_top": 204,
+          "set_row": 205,
+          "result": 228
+        },
+        "item_header": {
+          "A": "項番",
+          "C": "論理名",
+          "P": "物理名",
+          "AE": "データ型",
+          "AH": "備考"
+        }
+      }
+    },
+    "system_name": "CMPF",
+    "doc_no_format": "B04-G-xxx-DD",
+    "detail_template": "tools/design-xlsx/templates/詳細設計書_テンプレート.xlsx"
   },
   "unit_test": {
     "_doc": {

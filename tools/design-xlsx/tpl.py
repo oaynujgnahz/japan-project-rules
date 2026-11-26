@@ -189,7 +189,7 @@ def validate(spec, path="design.json"):
     # 対外 xlsx 禁止項：表示テキストに Q 番号・ファイルパス・行番号を書かない（refs は追跡用なので対象外）。
     _NG = [(re.compile(r"[QＱ][-－]\d+"), "Q 番号"),
            (re.compile(r"[\w-]+/[\w./-]+\.(java|ts|vue|xml|py|sql|js)\b|\.(java|ts|vue|xml|py|sql|js):\d+\b"), "ファイルパス／行番号"),
-           (re.compile(r"(?i)\b(bot|agent|grok)\b|ボット|エージェント"), "agent／bot 名")]
+           (re.compile(r"(?i)\bgrok\b|設計書 ?bot|単体case|[碳排放水田]+-(設計書|单体case|coder|reviewer|设计书)"), "agent／bot 名")]
     def scan(o, where):
         if isinstance(o, dict):
             for k, v in o.items():

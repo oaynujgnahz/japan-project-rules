@@ -33,7 +33,7 @@ alwaysApply: false
 - 导出工具：`tools/design-xlsx/`（`export_scr.py` / `export_api.py`，读 design.json，套 `templates/` 下的公司模板）。不要按功能复制一份构建脚本。
 - **写作顺序**：MD 原稿先用中文写给开发方确认；内容定稿后再出日文 MD 和 xlsx，两边同步保持最终版。
 - **交付目录**：放回仓库 `docs/{機能}/` 时新建 `v{版本号}_{YYYYMMDD}/` 子目录，不覆盖已有文件；放回前先问用户。
-- **错误码**：写成 `{项目前缀}NNNN-E` 形式（前缀由项目配置定义，CMPF 为 `CMPF`），文言以代码 locale 为准。
+- **错误码**：格式以项目配置 `ids.error_code` 为准（CMPF 为 `CMPF\d{4}-[EIW]`，含 -I 信息 / -W 警告），チェック・エラー一覧的レベル列按 E/I/W 对应；文言以代码 locale 为准。
 
 <!-- [CMPF] docs/ai-native/ 模板和 仕様MD化_バックログ.md 路径属 CMPF -->
 ## 仕样 MD 化（强制策略）
