@@ -1,4 +1,0 @@
-interface:
-  display_name: "CMPF Report File IO"
-  short_description: "CMPF file import and export workflows"
-  default_prompt: "Use CMPF Report File IO when changing CMPF report exports, templates, downloads, imports, uploads, or file validation."

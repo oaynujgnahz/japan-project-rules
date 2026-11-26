@@ -16,7 +16,7 @@ cd ~/work/japan-project-rules
 
 1. 把规则复制进 CMPF-SRC（`AGENTS.md`、`.cursor/`、`docs/ai-native/`、`docs/単体テスト項目テンプレート/`、`e2e/`、`mvn8`、PR 模板、`tools/design-xlsx/`、`tools/unit-test-xlsx/`）。已有文件如果内容不同，先备份到 `.rules-backup/<时间>/` 再覆盖。
 2. 把这些文件写进 `.git/info/exclude`：只在你本地生效，`git status` 里看不到，也不用改 `.gitignore`。
-3. 把 `md-design-doc`、`cmpf-report-file-io` 两个 skill 装到 `~/.cursor/skills/`。
+3. 把 `skills/` 下的 skill 装到 `~/.cursor/skills/`。
 4. 检查 Java 8、Maven、python3、node，缺什么会直接提示。
 
 装完用 Cursor 打开 CMPF-SRC，规则就会自动生效。
@@ -52,7 +52,7 @@ Grok Bot 的技能只在同一个账号的 bot 之间共用，同事的 bot 读�
 2. **导入技能**：让 bot 把下面两份 SKILL.md 存成它自己的技能，并在技能里把相对路径换成第 1 步的绝对路径（例：`tools/design-xlsx/` → `/workspace/japan-project-rules/tools/design-xlsx/`）。
    - `skills/design-doc-xlsx/`（SKILL.md + RULES.md）：詳細設計書 / 对外设计书
    - `skills/unit-test-xlsx/SKILL.md`：単体テスト項目
-   - `skills/cmpf-report-file-io/`、`skills/md-design-doc/` 还没通用化，先不要导入。
+   - `skills/md-design-doc/` 还没通用化，先不要导入。
 3. **项目配置**：项目差异（系统名、错误码格式、locale 目录、模板）都在 `projects/<项目>/project.json`。`ledger_dir`（确认事项台账目录）留空，按自己的环境填。没有你的项目时，照 `projects/cmpf/project.json` 复制一份改。
 4. **bot 说明**：bot 说明里不要写别人的路径。代码目录、技能名、台账目录都换成自己的。
 5. **依赖**：`python3 -m pip install -r tools/design-xlsx/requirements.txt`（openpyxl、python-pptx；`read_pptx.py --render` 另需 LibreOffice 和 poppler）。
