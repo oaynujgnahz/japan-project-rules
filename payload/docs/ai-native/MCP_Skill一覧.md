@@ -8,7 +8,7 @@
 |------|------|------|
 | 要件/设计 | `md-design-doc`（与 `design-docs.mdc` 冲突时以后者为准）、`验收标准_模板.md`；xlsx 拆 API設計書 / 画面設計書 两份导出 | 无 docs |
 | 既存理解 | Grep / SemanticSearch / `explore` | 猜测 |
-| 文件 I/O | `cmpf-report-file-io`（没有则读既存实现并注明） | 自造取込逻辑 |
+| 文件 I/O | `{{name}}-report-file-io`（没有则读既存实现并注明） | 自造取込逻辑 |
 | RV | `review.mdc` | 跳过 checklist |
 | 单体 | `unit-test-case-docs.mdc`（有单体case bot 时由它生成）、回归矩阵模板（`verification-before-completion` 有则用） | skipTests 即完成 |
 | E2E | Playwright MCP / Browser + `e2e/`（没有则人工 case 并注明） | 仅 MagicPod |

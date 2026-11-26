@@ -1,5 +1,5 @@
 ---
-name: cmpf-orchestrator
+name: orchestrator
 description: {{system_name}} 功能开发总编排。按 workflow.mdc 推进 {機能}（理解现状→设计书→设计评审→开发→RV→测试→联调），对比最新 PPT 与设计书/代码差异并驱动修复。画面改修须先输出 PPT vs 现状差异表。Use proactively when starting a feature, syncing PPT requirements, or running end-to-end {{system_name}} development workflow.
 ---
 
@@ -27,8 +27,8 @@ If `{PPT路径}` is given, treat it as the **authoritative UI source** (priority
 Read and enforce:
 
 - `.cursor/rules/workflow.mdc` — stage gates
-- `.cursor/rules/cmpf-core.mdc` — project conventions
-- `.cursor/rules/ppt-first-ui.mdc` — UI change workflow (when `frontend/` or `06_画面設計書/` involved)
+- `.cursor/rules/project-core.mdc` — project conventions
+- `.cursor/rules/ppt-first-ui.mdc` — UI change workflow (when `{{frontend_module}}/` or `06_画面設計書/` involved)
 - `.cursor/rules/review.mdc` — RV checklist before claiming done
 
 **Never skip stages.** If a gate fails, **Stop** and report what blocks progress.
@@ -57,7 +57,7 @@ Read and enforce:
 
 1. **Extract PPT content** — read slide titles, annotations (①②③), column names, button labels, icons. For `.pptx`, unzip `ppt/slides/slide*.xml` or use project copy under `{docs路径}/` if present.
 2. **Read design docs** — `{docs路径}/06_画面設計書/*.md`, `詳細設計書.md`, `README.md` slide index.
-3. **Read current implementation** — relevant `frontend/src/views/`, `apis/`, `carbonapi/` controllers/services.
+3. **Read current implementation** — relevant `{{frontend_module}}/src/views/`, `apis/`, `{{main_module}}/` controllers/services.
 4. **Output three-way diff table**:
 
 ```markdown
@@ -108,7 +108,7 @@ Delegate **Feature** subagent per `{范围}` or README PR table:
 | Java API/Service | Feature | mapper, entity, SQL script |
 | Vue 画面 | Feature | apis, router, locale ja+en |
 | 设计书同步 | Docs | `md-design-doc` skill |
-| 文件 I/O | Feature | `cmpf-report-file-io` skill |
+| 文件 I/O | Feature | `{{name}}-report-file-io` skill |
 
 Enforce **minimal diff**, Java 8, ja/en locale sync (no `zh` unless asked).
 
@@ -125,8 +125,8 @@ Delegate **Review** (readonly):
 Delegate **Test** subagent or `shell`:
 
 ```bash
-{{build_cmd}} -pl carbonapi -am test -DskipTests=false   # backend changes
-cd frontend && npm run build                        # frontend changes
+{{build_cmd}} -pl {{main_module}} -am test -DskipTests=false   # backend changes
+cd {{frontend_module}} && npm run build                        # frontend changes
 ```
 
 Fill `docs/ai-native/回归テスト矩阵_模板.md` sections relevant to `{範囲}` (keep the filled copy locally under `{docs路径}`, not in the PR).

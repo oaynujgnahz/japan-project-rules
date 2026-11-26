@@ -50,7 +50,7 @@ alwaysApply: true
 <!-- [{{system_name}}] 本节几乎整节为 {{system_name}} 专属：PPT 优先、06_画面設計書、UI規範.md、只要 ja/en 不要 zh、用語辞書_日英.md、classic / new 路由 -->
 ## 4. 前端/UI RV
 
-- [ ] **画面改修**：与 PPT 或 `06_画面設計書` 一致（`cmpf-core` 硬规则 + `ppt-first-ui.mdc`）；⏳ 未误报完成
+- [ ] **画面改修**：与 PPT 或 `06_画面設計書` 一致（`project-core` 硬规则 + `ppt-first-ui.mdc`）；⏳ 未误报完成
 - [ ] 复用 `docs/ai-native/UI規範.md` 中的共通组件
 - [ ] ja / en locale key 齐全（**不需** `locale/zh`），术语符合 `用語辞書_日英.md`
 - [ ] classic / new 路由均已检查（如适用）
@@ -75,8 +75,8 @@ alwaysApply: true
 
 本仓库由甲方管理。`AGENTS.md`、`.cursor/`、`docs/`、RV 结果等本地规则和资料**不得出现在提交内容中**。
 
-<!-- [{{system_name}}] 扫描清单中的 {{build_wrapper}}、e2e/、scripts/ 是 {{repo_name}} 特有文件和目录；BR/AC/Q 编号和 docs/ 为通用项。将来关键词从 project.json 读取 -->
-- [ ] 暂存区不含本地规则和资料文件：`git diff --cached --name-only` 中无 `AGENTS.md`、`.cursor/`、`.github/`、`docs/`、`e2e/`、`scripts/`、`{{build_wrapper}}`
+<!-- [{{system_name}}] 扫描清单中的 {{wrapper_sep_after}}e2e/、scripts/ 是 {{repo_name}} 特有文件和目录；BR/AC/Q 编号和 docs/ 为通用项。将来关键词从 project.json 读取 -->
+- [ ] 暂存区不含本地规则和资料文件：`git diff --cached --name-only` 中无 `AGENTS.md`、`.cursor/`、`.github/`、`docs/`、`e2e/`、`scripts/`{{wrapper_code_before}}
 - [ ] 暂存区不含 `.gitignore`（本地对它的改动不提交，提交时人工选文件）：`git diff --cached --quiet -- .gitignore` 返回 0
 - [ ] 代码、注释、JUnit 方法名和 `@DisplayName`、commit message 中不含设计书编号和本地资料路径：`git diff --cached | grep -nE 'BR-[0-9]|AC-[0-9]|Q-[0-9]|docs/|AGENTS|\.cursor|設計書|单体|単体テスト項目'` 无结果（误报逐条说明）
 - [ ] 需要追溯的地方改用业务语言描述（例：「同一会社・同一区分で色位置が重複しない」）

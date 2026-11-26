@@ -4,8 +4,8 @@
 
 ## 实装前检查清单
 
-- [ ] `frontend/src/components/` 是否有可复用组件？
-- [ ] `frontend/src/hook/LocalNaiveUI.ts` 是否有对话框/表格按钮模式？
+- [ ] `{{frontend_module}}/src/components/` 是否有可复用组件？
+- [ ] `{{frontend_module}}/src/hook/LocalNaiveUI.ts` 是否有对话框/表格按钮模式？
 - [ ] 同类画面（如列表+详情）如何布局？对齐参照画面
 - [ ] classic / new 双路由是否都需要改？
 

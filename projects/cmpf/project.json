@@ -2,10 +2,11 @@
   "_example": true,
   "name": "cmpf",
   "_doc": {
-    "name": "Project config read by install.sh and tools/* (--config). Generated per project by ./init.sh (never committed); projects/cmpf/project.json in the rules repo is only the read-only example. Keys starting with _ are docs, readers must skip them; JSON object keys are strings (e.g. layout row 5)",
+    "name": "Project config read by install.sh and tools/* (--config). Generated per project by ./init.sh (never committed); the example under projects/ in the rules repo is read-only. Keys starting with _ are docs, readers must skip them; JSON object keys are strings (e.g. layout row 5)",
     "local_only": "copied but hidden via .git/info/exclude, never committed",
     "env_checks": "install.sh step 4; empty list = skip",
-    "_example": "the rules-repo example carries \"_example\": true and every script refuses it; init.sh drops the flag in the generated copy"
+    "_example": "the rules-repo example carries \"_example\": true and every script refuses it; init.sh drops the flag in the generated copy",
+    "modules": "构建模块一览（install.sh 渲染 payload 的模块列表/命令/路径用）。每项 name / kind（api|lib|service|frontend|build）/ role（AGENTS.md 里的一行说明，英文）；kind=api 中恰好一个 \"main\": true（文档里的主 API 模块），kind=frontend 恰好一个。缺键或形状不对就报错。init 由构建文件的模块列表起草、逐项确认"
   },
   "detect": {
     "_doc": {
@@ -50,14 +51,54 @@
       "base_package": "Java 包根；init 由 src/main/java 的 package 声明公共前缀得出；非 Java 项目可空",
       "build_cmd": "后端构建/测试命令的可执行部分（如 ./mvnw、mvn、./gradlew）；init 按构建文件得出",
       "build_wrapper": "payload/{{build_wrapper}}（Java 8 用 Maven 包装脚本）安装成的文件名；空=不装。local_only / executable 也跟着它",
-      "error_code_prefix": "错误码前缀（文档里的例子 XXXX0073-E 用）；init 取 ids.error_code 开头的字母"
+      "error_code_prefix": "错误码前缀（文档里的例子 XXXX0073-E 用）；init 取 ids.error_code 开头的字母",
+      "root_artifact": "根构建的 artifact（Maven parent 等，AGENTS.md / project-core.mdc 用）；init 取 pom.xml 根 artifactId"
     },
     "repo_name": "CMPF-SRC",
     "base_package": "com.ntt.cmpf",
     "build_cmd": "./mvn8",
     "build_wrapper": "mvn8",
-    "error_code_prefix": "CMPF"
+    "error_code_prefix": "CMPF",
+    "root_artifact": "carbon-parent"
   },
+  "modules": [
+    {
+      "name": "common",
+      "kind": "lib",
+      "role": "shared Java utilities, i18n resources, common dependencies."
+    },
+    {
+      "name": "carbonapi",
+      "kind": "api",
+      "main": true,
+      "role": "main carbon/PCF API service, report/export logic, MyBatis mappers, SQL resources."
+    },
+    {
+      "name": "taskapi",
+      "kind": "api",
+      "role": "task API service."
+    },
+    {
+      "name": "userapi",
+      "kind": "api",
+      "role": "user/account API service, Keycloak-related dependencies."
+    },
+    {
+      "name": "message",
+      "kind": "service",
+      "role": "socket/message service."
+    },
+    {
+      "name": "frontend",
+      "kind": "frontend",
+      "role": "Vue UI module, also built by Maven through `frontend-maven-plugin`."
+    },
+    {
+      "name": "report",
+      "kind": "build",
+      "role": "JaCoCo aggregate coverage module."
+    }
+  ],
   "code_comments": {
     "_doc": {
       "forbid_chinese": "enables .cursor/hooks/check-no-chinese-comments.py"

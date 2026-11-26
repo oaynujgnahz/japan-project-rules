@@ -71,6 +71,20 @@ while IFS= read -r -d '' src; do
   run cp -p "$src" "$dst"
   copied=$((copied+1))
 done < <(find "$STAGE" "$KIT_DIR/tools" -type f ! -name '.DS_Store' ! -name '*.pyc' ! -path '*/__pycache__/*' -print0)
+# Files this kit installed under older names: move them into the same backup dir (never delete)
+LEGACY_NAMES=(
+  ".cursor/rules/cmpf-core.mdc"            # → .cursor/rules/project-core.mdc
+  ".cursor/agents/cmpf-orchestrator.md"    # → .cursor/agents/orchestrator.md
+)
+moved=0
+for old in "${LEGACY_NAMES[@]}"; do
+  if [ -e "$TARGET/$old" ]; then
+    run mkdir -p "$(dirname "$BACKUP/$old")"
+    run mv "$TARGET/$old" "$BACKUP/$old"
+    moved=$((moved+1))
+  fi
+done
+[ "$moved" = 0 ] || yellow "  old-name file(s) moved to backup: $moved (→ ${BACKUP#$TARGET/})"
 while IFS= read -r x; do
   [ -n "$x" ] || continue
   if [ -e "$TARGET/$x" ] || [ "$DRY" = 1 ]; then run chmod +x "$TARGET/$x"; else yellow "  executable listed in config but missing: $x"; fi

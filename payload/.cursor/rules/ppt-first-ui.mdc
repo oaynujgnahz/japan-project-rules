@@ -1,7 +1,7 @@
 ---
-description: 画面改修完整流程 — PPT/截图优先、差异表、设计书同步（硬规则摘要见 cmpf-core.mdc）
+description: 画面改修完整流程 — PPT/截图优先、差异表、设计书同步（硬规则摘要见 project-core.mdc）
 globs:
-  - frontend/**/*.{vue,ts,tsx}
+  - {{frontend_module}}/**/*.{vue,ts,tsx}
   - docs/**/06_画面設計書/**
   - docs/**/验收标准.md
 alwaysApply: false
@@ -10,7 +10,7 @@ alwaysApply: false
 <!-- [{{system_name}}] 整份为 {{system_name}} 画面改修流程：需求以 PPT 提供、06_画面設計書 / 07_API設計書 目录结构；将来由项目配置决定是否启用 -->
 # PPT 优先 UI 开发
 
-> **硬规则（3 条）**：唯一定义于 `cmpf-core.mdc` §画面改修 Gate。本节只写 **怎么做**。
+> **硬规则（3 条）**：唯一定义于 `project-core.mdc` §画面改修 Gate。本节只写 **怎么做**。
 
 ## 何时适用
 
@@ -44,7 +44,7 @@ PPT ≠ MD → **Stop** → 更新 `06_画面設計書` → 再编码。
 1. **先改设计书** — 修正 `docs/{機能}/` 内所有受影响文档（至少：`06_画面設計書/`、相关 `07_API設計書/`、`詳細設計書.md`、`验收标准.md`、`设计评审记录.md`、README slide 索引）
    - **直接删除或替换**与 PPT 矛盾的错误描述；**不得**保留旧错误内容与正确描述并存
    - 误标 `done` 的 **実装状態サマリ** 改为 ⏳ 或更正
-2. **再改代码** — 设计书与 PPT 对齐后方可动 `frontend/` / 后端；minimal diff
+2. **再改代码** — 设计书与 PPT 对齐后方可动 `{{frontend_module}}/` / 后端；minimal diff
 3. **回复中告知** — 用简短「纠错摘要」说明：错在哪 → 改了哪些设计书 → 改了哪些代码（**不必**在 MD 里保留「曾理解错误」的历史段落）
 
 | 禁止 | 说明 |
@@ -57,7 +57,7 @@ PPT ≠ MD → **Stop** → 更新 `06_画面設計書` → 再编码。
 
 ## 实装前：PPT vs 现状差异表（必填）
 
-无表 **不得** 改 `frontend/` 布局代码。
+无表 **不得** 改 `{{frontend_module}}/` 布局代码。
 
 ```markdown
 | PPT 要素 | PPT 要求 | 当前实现 | 冲突 | 计划 |

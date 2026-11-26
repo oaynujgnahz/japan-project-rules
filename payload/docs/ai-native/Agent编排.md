@@ -16,7 +16,7 @@
 
 详细分工见 [開発フロー.md](./開発フロー.md) §团队分工。
 
-> **不使用 Grok Bot 时**（只用 Cursor 开发）：各角色全部由 Cursor Agent 自己承担（可按 `cmpf-orchestrator.md` 分阶段 / 分 subagent），流程、门禁、产出物不变。
+> **不使用 Grok Bot 时**（只用 Cursor 开发）：各角色全部由 Cursor Agent 自己承担（可按 `orchestrator.md` 分阶段 / 分 subagent），流程、门禁、产出物不变。
 
 ## 架构
 
@@ -42,10 +42,10 @@ review.mdc（RV 结果本地留存）+ 人工 PR（仅业务内容）+ CI
 
 | 领域 | Feature Scope | 禁止 |
 |------|---------------|------|
-| 报告/PPT/Excel | `carbonapi/.../report/`、`excel/` | 无设计书改模板坐标 |
+| 报告/PPT/Excel | `{{main_module}}/.../report/`、`excel/` | 无设计书改模板坐标 |
 | 新画面 | apis + views + router + locale | 漏 routes-classic |
 | 电力连携 | controller/service + sql | 未读外部 IF 定义书 |
-| userapi | 模块内 | 改 prd manifest |
+| {{other_api_modules}} | 模块内 | 改 prd manifest |
 
 ## 复盘映射
 

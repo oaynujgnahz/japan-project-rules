@@ -286,7 +286,7 @@ def lint(data: dict, layout, operation, check, design_ids: Optional[Dict[str, st
 
 # ---------------------------------------------------------------- design inventory
 def design_inventory(src: Optional[str]) -> Dict[str, str]:
-    """design.json（cmpf-design-doc-xlsx 形式）/ docs/{機能}/ 目录 / 設計書.xlsx から ID 一覧を作る"""
+    """design.json（設計書 bot = tools/design-xlsx 形式）/ docs/{機能}/ 目录 / 設計書.xlsx から ID 一覧を作る"""
     if not src:
         return {}
     sys.path.insert(0, str(HERE))

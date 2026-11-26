@@ -9,10 +9,10 @@ alwaysApply: false
 
 ## 结构
 
-<!-- [{{system_name}}] {{base_package}} 包结构、carbonapi 的 SQL 路径属 {{system_name}} -->
+<!-- [{{system_name}}] {{base_package}} 包结构、{{main_module}} 的 SQL 路径属 {{system_name}} -->
 - 包：`{{base_package}}.{module}.*`（controller / service / mapper / dto / entity）
 - MyBatis XML：`{module}/src/main/resources/mapper/`
-- SQL 脚本：`carbonapi/src/main/resources/sql/` 或根目录 `.sql`
+- SQL 脚本：`{{main_module}}/src/main/resources/sql/` 或根目录 `.sql`
 - 新功能类名按业务域命名，避免滥用 `Ghg` 等宽泛前缀
 
 ## 对齐要求
@@ -68,9 +68,9 @@ else { throw new BusinessException("..."); }
 
 ## 报告 / 文件生成
 
-<!-- [{{system_name}}] carbonapi 报告生成、cmpf-report-file-io skill、PCF 等日文业务术语属 {{system_name}} -->
-- `carbonapi` 中 Excel、PDF、PPT、报告生成对 fonts、模板、坐标敏感
-- 改动前读既有实现；参照 `cmpf-report-file-io` skill
+<!-- [{{system_name}}] {{main_module}} 报告生成、{{name}}-report-file-io skill、PCF 等日文业务术语属 {{system_name}} -->
+- `{{main_module}}` 中 Excel、PDF、PPT、报告生成对 fonts、模板、坐标敏感
+- 改动前读既有实现；参照 `{{name}}-report-file-io` skill
 - PCF、电力连携、报告、削減相关保留日语业务术语（除非用户要求翻译）
 
 ## 测试
@@ -78,4 +78,4 @@ else { throw new BusinessException("..."); }
 <!-- [{{system_name}}] JUnit 4、{module} 路径和测试样例类属 {{system_name}} -->
 - `{module}/src/test/java/.../{Class}Test.java`（JUnit 4）
 - POI/PPT/Excel：classpath 模板 + 断言
-- 参照 `PcfCalculationExcelTemplateComposerTest`、`carbonapi/.../report/*Test.java`
+- 参照 `PcfCalculationExcelTemplateComposerTest`、`{{main_module}}/.../report/*Test.java`

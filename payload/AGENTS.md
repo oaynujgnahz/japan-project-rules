@@ -6,8 +6,8 @@ This file is the working guide for AI coding agents in this repository. Keep it 
 
 本仓库由甲方管理。本规则体系仅在本地使用，**甲方不可见**：
 
-<!-- [{{system_name}}] e2e/、scripts/、{{build_wrapper}} 是 {{repo_name}} 特有的本地文件和目录；将来由项目配置的本地专用清单替换 -->
-- 下列文件/目录**禁止 commit / push**：`AGENTS.md`、`.cursor/`、`.github/pull_request_template.md`、`docs/`、`e2e/`、`scripts/`、`{{build_wrapper}}`
+<!-- [{{system_name}}] e2e/、scripts/{{wrapper_sep_before}} 是 {{repo_name}} 特有的本地文件和目录；将来由项目配置的本地专用清单替换 -->
+- 下列文件/目录**禁止 commit / push**：`AGENTS.md`、`.cursor/`、`.github/pull_request_template.md`、`docs/`、`e2e/`、`scripts/`{{wrapper_code_before}}
 - 本地 `.gitignore` 中追加的 `/docs/` 等忽略设置为本地改动，**`.gitignore` 本身也不得提交**；提交由用户人工选择文件进行
 - 提交内容（commit message、PR 说明、代码注释、JUnit 方法名 / `@DisplayName`）中**不得出现**：BR / AC / Q 编号、`docs/` 路径、设计书名、RV checklist、bot 分工；需要说明时用业务语言
 - RV 结果、测试基线、回归矩阵只留在本地或团队群，不贴进 PR
@@ -22,16 +22,16 @@ This file is the working guide for AI coding agents in this repository. Keep it 
 | **`AGENTS.md`（本文件）** | 官方支持根目录与子目录自动注入 | **补充**：人类可读完整指南；细节以 Rules 为准 |
 | **`docs/ai-native/`** | 否（需 Agent 读取或 `@` 引用） | 流程与编排文档，给人和 Orchestrator 看 |
 
-<!-- [{{system_name}}] 画面改修 Rules 分层（frontend/、06_画面設計書/、Vue/Naive）属 {{system_name}} 技术栈和 PPT 优先流程 -->
+<!-- [{{system_name}}] 画面改修 Rules 分层（{{frontend_module}}/、06_画面設計書/、Vue/Naive）属 {{system_name}} 技术栈和 PPT 优先流程 -->
 **Rules 分层（画面改修）**
 
 | 文件 | 注入时机 | 内容 |
 |------|----------|------|
-| `cmpf-core.mdc` | 始终 | 3 条硬规则摘要 |
-| `ppt-first-ui.mdc` | 编辑 `frontend/` 或 `06_画面設計書/` 时 | 差异表、优先级、PR 拆分、**PPT 再验证理解纠错 Gate** |
-| `frontend-vue.mdc` | 编辑 `frontend/**/*.{vue,ts,tsx}` 时 | Vue/Naive 实装规范 |
+| `project-core.mdc` | 始终 | 3 条硬规则摘要 |
+| `ppt-first-ui.mdc` | 编辑 `{{frontend_module}}/` 或 `06_画面設計書/` 时 | 差异表、优先级、PR 拆分、**PPT 再验证理解纠错 Gate** |
+| `frontend-vue.mdc` | 编辑 `{{frontend_module}}/**/*.{vue,ts,tsx}` 时 | Vue/Naive 实装规范 |
 
-Cursor [官方文档](https://cursor.com/docs/context/rules) 将 `AGENTS.md` 列为 `.cursor/rules` 的简化替代。实践中偶有未自动注入的情况（Settings 里能看到但上下文里没有）；若发现 Agent 未遵守，可在对话开头 `@AGENTS.md`，或依赖已提交的 `cmpf-core.mdc`（`alwaysApply: true`）。
+Cursor [官方文档](https://cursor.com/docs/context/rules) 将 `AGENTS.md` 列为 `.cursor/rules` 的简化替代。实践中偶有未自动注入的情况（Settings 里能看到但上下文里没有）；若发现 Agent 未遵守，可在对话开头 `@AGENTS.md`，或依赖已提交的 `project-core.mdc`（`alwaysApply: true`）。
 
 **维护原则**：硬性边界、按文件类型约束 → 写进 `.cursor/rules/`；项目结构、命令、流程索引 → 保留在本文件。
 
@@ -41,41 +41,35 @@ Cursor [官方文档](https://cursor.com/docs/context/rules) 将 `AGENTS.md` 列
 CO2MOS AI 本格運用方針に基づく開発工程整备。详细流程、Agent 角色、MCP/Skill 映射见：
 
 - **索引**：`docs/ai-native/README.md`
-- **Cursor Rules**：`.cursor/rules/*.mdc`（`cmpf-core.mdc` 全局生效）
+- **Cursor Rules**：`.cursor/rules/*.mdc`（`project-core.mdc` 全局生效）
 - **术语**：`docs/ai-native/用語辞書_日英.md`
 - **UI**：`docs/ai-native/UI規範.md`
 
 新功能开发：先读 `docs/ai-native/開発フロー.md`，实装前必须理解既存逻辑并对照 `docs/{機能}/` 设计书。
 
-<!-- [{{system_name}}] 本节整节为 {{system_name}} 项目概要：Java 8 / Spring Boot 2.5.14 / Vue 3、carbon-parent 与各模块、manifests 和 Azure Pipelines；将来由项目配置替换 -->
+<!-- [{{system_name}}] 本节整节为 {{system_name}} 项目概要：Java 8 / Spring Boot 2.5.14 / Vue 3、{{root_artifact}} 与各模块、manifests 和 Azure Pipelines；将来由项目配置替换 -->
 ## Project Overview
 
 - {{system_name}} is a multi-module Java 8 / Spring Boot 2.5.14 project with a Vue 3 + TypeScript + Vite frontend.
-- Root Maven parent: `pom.xml`, artifact `carbon-parent`.
+- Root Maven parent: `pom.xml`, artifact `{{root_artifact}}`.
 - Maven modules:
-  - `common`: shared Java utilities, i18n resources, common dependencies.
-  - `carbonapi`: main carbon/PCF API service, report/export logic, MyBatis mappers, SQL resources.
-  - `taskapi`: task API service.
-  - `userapi`: user/account API service, Keycloak-related dependencies.
-  - `message`: socket/message service.
-  - `frontend`: Vue UI module, also built by Maven through `frontend-maven-plugin`.
-  - `report`: JaCoCo aggregate coverage module.
+{{modules_list}}
 - Deployment assets live under `manifests/` and Azure pipeline files at the repository root.
 - The project contains Chinese, Japanese, and English documents/resources. Preserve existing language and terminology in nearby files.
 
-<!-- [{{system_name}}] 本节整节为 {{system_name}} 目录结构（{{base_package}}、carbonapi、frontend/src、locale ja/en、manifests 各环境）；将来由项目配置替换 -->
+<!-- [{{system_name}}] 本节整节为 {{system_name}} 目录结构（{{base_package}}、{{main_module}}、{{frontend_module}}/src、locale ja/en、manifests 各环境）；将来由项目配置替换 -->
 ## Repository Layout
 
-- Backend Java source: `<module>/src/main/java/com/ntt/cmpf/...`
+- Backend Java source: `<module>/src/main/java/{{base_package_path}}/...`
 - Backend resources: `<module>/src/main/resources/`
 - MyBatis XML mappers: `<module>/src/main/resources/mapper/`
-- SQL change scripts: usually under `carbonapi/src/main/resources/sql/` or root-level `.sql` files.
-- Frontend source: `frontend/src/`
-- Frontend APIs: `frontend/src/apis/`
-- Frontend views: `frontend/src/views/`
-- Frontend router: `frontend/src/router/`
-- Frontend stores: `frontend/src/store/`
-- Frontend locale files: `frontend/src/locale/{ja,en}/`（`zh/` 目录存在但不在维护范围，新功能不需更新 zh）
+- SQL change scripts: usually under `{{main_module}}/src/main/resources/sql/` or root-level `.sql` files.
+- Frontend source: `{{frontend_module}}/src/`
+- Frontend APIs: `{{frontend_module}}/src/apis/`
+- Frontend views: `{{frontend_module}}/src/views/`
+- Frontend router: `{{frontend_module}}/src/router/`
+- Frontend stores: `{{frontend_module}}/src/store/`
+- Frontend locale files: `{{frontend_module}}/src/locale/{ja,en}/`（`zh/` 目录存在但不在维护范围，新功能不需更新 zh）
 - Kubernetes manifests: `manifests/{dev,dev-wf,stg,prd,mieco-*}/`
 
 <!-- [{{system_name}}] 本节整节为 {{system_name}} 构建命令（{{build_cmd}}、Maven 模块、npm、Node v16.14.0、naive-ui patch）；将来由项目配置的 BUILD_CMD 等替换 -->
@@ -100,15 +94,14 @@ The root `pom.xml` sets `skipTests` to `true` by default. When tests matter for 
 To build or test a single backend module plus required dependencies:
 
 ```bash
-{{build_cmd}} -pl carbonapi -am package
-{{build_cmd}} -pl taskapi -am test -DskipTests=false
-{{build_cmd}} -pl userapi -am test -DskipTests=false
+{{build_cmd}} -pl {{main_module}} -am package
+{{other_api_test_cmds}}
 ```
 
 ### Frontend
 
 ```bash
-cd frontend
+cd {{frontend_module}}
 npm install
 npm run dev
 npm run build
@@ -117,14 +110,14 @@ npm run serve
 
 Frontend notes:
 
-- Node `v16.14.0` and npm `7.6.0` are configured in `frontend/pom.xml` for Maven builds.
+- Node `v16.14.0` and npm `7.6.0` are configured in `{{frontend_module}}/pom.xml` for Maven builds.
 - `npm run build` uses `node --max_old_space_size=4096`.
-- `postinstall` runs `patch-package`; preserve `frontend/patches/naive-ui+2.35.0.patch`.
+- `postinstall` runs `patch-package`; preserve `{{frontend_module}}/patches/naive-ui+2.35.0.patch`.
 
 ## Verification Expectations
 
 - For Java changes, run the narrowest relevant Maven command first. Use `-pl <module> -am` for module-scoped work.
-- For frontend changes, run `npm run build` from `frontend/` when practical.
+- For frontend changes, run `npm run build` from `{{frontend_module}}/` when practical.
 - For route, API, locale, or UI changes, check related files together: API wrapper, view/component, router, store, and locale entries.
 - For SQL or mapper changes, verify corresponding Java mapper/entity/service usage and keep XML mapper result mappings aligned.
 - If a command cannot be run because of local environment, time, or missing services, report that clearly with the reason.
@@ -149,9 +142,9 @@ Frontend notes:
 ## Frontend Rules
 
 - Use the existing Vue 3 + TypeScript + Vite style.
-- Prefer existing components in `frontend/src/components/` and established API wrappers in `frontend/src/apis/`.
-- Keep locale changes synchronized across **`ja` and `en`** when the UI text is user-visible. Do **not** add or update `frontend/src/locale/zh/` for new work unless explicitly requested.
-- Keep router changes consistent with `frontend/src/router/index.ts`, `routes-new.ts`, and `routes-classic.ts`.
+- Prefer existing components in `{{frontend_module}}/src/components/` and established API wrappers in `{{frontend_module}}/src/apis/`.
+- Keep locale changes synchronized across **`ja` and `en`** when the UI text is user-visible. Do **not** add or update `{{frontend_module}}/src/locale/zh/` for new work unless explicitly requested.
+- Keep router changes consistent with `{{frontend_module}}/src/router/index.ts`, `routes-new.ts`, and `routes-classic.ts`.
 - Use existing Naive UI patterns and project styling conventions.
 - Do not remove or bypass the `patch-package` setup for Naive UI.
 
@@ -160,8 +153,8 @@ Frontend notes:
 - Keep controller, service, mapper, DTO/entity, and XML mapper changes aligned.
 - For new database-backed behavior, check whether SQL scripts, mapper XML, Java model classes, and frontend API types all need updates.
 - Prefer adding focused unit or integration tests where the surrounding module already has test patterns.
-<!-- [{{system_name}}] carbonapi 报告生成、PCF 等日文业务术语属 {{system_name}} 专属 -->
-- Be careful with Excel, PDF, PPT, and report-generation code in `carbonapi`; these flows are sensitive to fonts, templates, coordinates, and generated output.
+<!-- [{{system_name}}] {{main_module}} 报告生成、PCF 等日文业务术语属 {{system_name}} 专属 -->
+- Be careful with Excel, PDF, PPT, and report-generation code in `{{main_module}}`; these flows are sensitive to fonts, templates, coordinates, and generated output.
 - Preserve Japanese business terms in PCF, electricity service, report, and reduction-related features unless the user requests translation.
 
 <!-- [{{system_name}}] 本节整节为 {{system_name}} 部署环境：manifests、azure-pipelines、prd / mieco-prd；将来由项目配置替换 -->
@@ -177,8 +170,8 @@ Frontend notes:
 - For 画面改修 / PPT 对照：若用户要求「按 PPT 再次验证」且 Agent 承认此前理解错误 → 在**回复**中简述纠错；仅是设计书写错、不改变 BR / AC / 画面事件 / API 契约 → 可直接先改设计书再改代码；涉及上述任一项变更 → 先列为要確認事項（Q），用户或需求方确认后再改设计书和代码（`ppt-first-ui.mdc` §理解纠错 Gate）。
 - Reply to the user in Chinese by default. Use another language only when the user asks for it, when quoting source text, or when preserving nearby project terminology.
 - Think before coding: state assumptions, ambiguities, and tradeoffs when they affect implementation.
-<!-- [{{system_name}}] cmpf-report-file-io skill 为 {{system_name}} 专属 -->
-- For {{system_name}} file import/export work, use the personal `cmpf-report-file-io` skill when available (if unavailable, read the existing implementation and note it in the reply). It covers downloads, templates, Excel/CSV/PPT/PDF/JSON/DOCX output, upload/取込 validation, and frontend blob/FormData flows.
+<!-- [{{system_name}}] {{name}}-report-file-io skill 为 {{system_name}} 专属 -->
+- For {{system_name}} file import/export work, use the personal `{{name}}-report-file-io` skill when available (if unavailable, read the existing implementation and note it in the reply). It covers downloads, templates, Excel/CSV/PPT/PDF/JSON/DOCX output, upload/取込 validation, and frontend blob/FormData flows.
 <!-- [{{system_name}}] 设计书目录结构（Future 06/07）、06_画面設計書 / 07_API設計書、単体テスト模板路径属 {{system_name}}；将来由项目配置的模板路径替换 -->
 - For 設計書 authoring, use the `md-design-doc` skill; output goes under `docs/{機能}/` per Future 06/07 structure.
 - **During feature development**, document implementation logic in the matching `06_画面設計書` / `07_API設計書` / `詳細設計書` / `验收标准` entries—not only in code. See `.cursor/rules/design-docs.mdc` §开发时设计留存 and `workflow.mdc` (功能开发文档 gate).

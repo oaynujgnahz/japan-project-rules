@@ -40,7 +40,7 @@ python3 $T/gen_ut_xlsx.py docs/{機能}/cases.json --config $CFG \
 <!-- [项目约定] 模板：默认后备模板路径 docs/ai-native/単体テスト項目_テンプレート.xlsx 是示例项目仓库约定 -->
 - 模板：`--template` ＞ 配置 `unit_test.template` ＞ 本工具 `templates/`（已清理版）＞ `docs/ai-native/単体テスト項目_テンプレート.xlsx`。
   规则仓库只带清理过的模板（无打印设置、公司名、敏感度标签、内部打印机等元数据）；要和公司原版逐字节一致，init 时在 `unit_test.template` 填公司原版的本地路径（不提交）。
-<!-- [项目约定] 多语言＋错误码格式：语言固定 ja/en，默认 locale 目录 frontend/src/locale；错误码按 [A-Z]{2,8}\d{3,5}-[EIW]（示例项目为 XXXXnnnn-E），code 行自动展开日文行＋英文行 -->
+<!-- [项目约定] 多语言＋错误码格式：语言和 locale 目录按配置 i18n.languages / i18n.locale_dir；错误码格式按配置 ids.error_code；code 行按语言自动展开 -->
 - 消息文言：省略 `--locale-dir` 时用配置 `i18n.locale_dir`（相对项目根），每种语言按 `unit_test.locale_files` 顺序读。check 行写 `"code"` 时取各语言文言，按 `i18n.languages` 展开（第一个语言是正文行，其余是 多言語対応チェック 行；书式 `unit_test.error_message_templates`，分岐2 的语言名 `unit_test.language_labels`）。错误码只认 `ids.error_code`。
 - `--design` 覆盖检查：design.json（设计书 bot 格式：screens / apis / business_rules / acceptance / checks）取 画面・API・BR・AC・错误码；目录读其中 MD/YAML，xlsx 读全部 sheet（改訂履歴・実装対照 除外），按配置的 ID 正则抽取。
 <!-- [项目约定] ID 写法：画面/API ID 按配置 ids.screen_id / ids.api_id；BR-/AC- 是设计书模板的约定 -->

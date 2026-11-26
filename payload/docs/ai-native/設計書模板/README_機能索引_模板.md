@@ -44,4 +44,4 @@
 
 | 脚本 | 说明 |
 |------|------|
-| `carbonapi/src/main/resources/sql/{脚本名}.sql` | {变更摘要} |
+| `{{main_module}}/src/main/resources/sql/{脚本名}.sql` | {变更摘要} |

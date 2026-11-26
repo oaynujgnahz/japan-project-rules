@@ -13,7 +13,7 @@ gen_ut_xlsx.py 经由调用时自动设定。
 <src> 可以是：
   * 设计书 bot（tools/design-xlsx/gen_design_xlsx.py）的 design.json
   * 仓库 docs/{機能}/ 目录（README / 詳細設計書 / 06_画面設計書 / 07_API設計書 / 验收标准 / openapi.yaml）
-  * cmpf-design-doc-xlsx 生成的 設計書.xlsx 或仓库里的任意设计书 xlsx
+  * 设计书 bot（tools/design-xlsx）生成的 設計書.xlsx 或仓库里的任意设计书 xlsx
 """
 from __future__ import annotations
 

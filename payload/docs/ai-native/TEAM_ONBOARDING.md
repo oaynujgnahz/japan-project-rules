@@ -8,9 +8,9 @@
 
 - [ ] `git pull` 最新 {{repo_name}}，并用 Cursor 打开仓库根目录
 - [ ] 本规则体系不在 {{system_name}} git 中：clone 私有仓库 `japan-project-rules`，执行 `./install.sh <{{repo_name}} 路径>`（自动复制规则、写入 `.git/info/exclude`、安装 skills）；提交时不要把这些文件带进 {{system_name}} 的提交
-- [ ] 确认 `.cursor/rules/` 存在；`cmpf-core.mdc`、`workflow.mdc`、`review.mdc`、`unit-test-case-docs.mdc` 为常驻规则
+- [ ] 确认 `.cursor/rules/` 存在；`project-core.mdc`、`workflow.mdc`、`review.mdc`、`unit-test-case-docs.mdc` 为常驻规则
 - [ ] 后端命令使用仓库本地 `{{build_cmd}}`（自动查找 Java 8 和 mvn；找不到时设 `JAVA8_HOME` / `MAVEN_BIN`）
-- [ ] 前端使用项目约定的 Node / npm；执行前先 `cd frontend && npm install`
+- [ ] 前端使用项目约定的 Node / npm；执行前先 `cd {{frontend_module}} && npm install`
 - [ ] 如需联调，执行 `cd e2e && npm install && npx playwright install chromium`
 - [ ] 如需 MCP，复制 `.cursor/mcp.json.example` 到 `.cursor/mcp.json` 并只填本地/只读账号
 
@@ -21,7 +21,7 @@
 | 小 bug / 局部改修 | 直接说清范围，先理解现状再改 |
 | 新功能 / 跨前后端 / DB / locale | 按七阶段流程，先建 `docs/{機能}/` |
 | 画面布局 / 列 / 按钮 / 控件变更 | 先提供 PPT/截图/06 画面设计书，并输出 PPT vs 现状差异表 |
-| 文件下载 / 上传 / Excel / PPT / PDF | 使用 `cmpf-report-file-io`（`install.sh` 已安装到 `~/.cursor/skills/`；没有则跳过并注明），先找同类实现 |
+| 文件下载 / 上传 / Excel / PPT / PDF | 使用 `{{name}}-report-file-io`（`install.sh` 已安装到 `~/.cursor/skills/`；没有则跳过并注明），先找同类实现 |
 | 只做 Review | 明确要求“不改代码”，按 `review.mdc` 输出 RV |
 
 ## 3. 大需求标准流程

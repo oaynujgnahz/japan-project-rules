@@ -80,7 +80,7 @@
 
 ## 多语言（locale）
 
-- 用户可见文案：**仅维护 ja / en**（`frontend/src/locale/ja`、`en`）
+- 用户可见文案：**仅维护 ja / en**（`{{frontend_module}}/src/locale/ja`、`en`）
 - `locale/zh/` 目录存在但 **不在维护范围**；新功能・改修不要追加 zh 文案
 - 规范：`.cursor/rules/i18n-locale.mdc` · 术语：`用語辞書_日英.md`
 
@@ -88,7 +88,7 @@
 
 | 规则 | alwaysApply |
 |------|-------------|
-| `cmpf-core` | ✅ 精简总览 |
+| `project-core` | ✅ 精简总览 |
 | `workflow` | ✅ 开发阶段门禁 + 模板索引 |
 | `review` | ✅ RV checklist |
 | `unit-test-case-docs` | ✅ 功能文档 ↔ 单体 Case 同步门禁 |

@@ -7,7 +7,7 @@ alwaysApply: false
 # Design Docs (設計書)
 
 <!-- [{{system_name}}] 画面布局以 PPT 为准属 {{system_name}} 需求交付方式（PPT） -->
-> 画面布局以 PPT 为准；流程 **`ppt-first-ui.mdc`** · 硬规则 **`cmpf-core.mdc` §画面改修 Gate**
+> 画面布局以 PPT 为准；流程 **`ppt-first-ui.mdc`** · 硬规则 **`project-core.mdc` §画面改修 Gate**
 
 <!-- [{{system_name}}] Future 06/07 目录结构、docs/ai-native/ 下的规范和模板路径属 {{system_name}}；将来由项目配置的模板路径替换 -->
 ## 目录（Future 06/07）

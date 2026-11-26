@@ -40,7 +40,9 @@ NEEDS = {
 
 # payload/ の {{占位符}} → 配置键（末尾 ? は空でも可）。install.sh が render-payload で置換する
 PAYLOAD_PLACEHOLDERS = {
+    "name": "name",                                   # 项目名（小写；e2e 包名、个人 skill 名、临时目录名）
     "system_name": "design.system_name",              # 规则文档里的项目/系统名
+    "root_artifact": "payload.root_artifact",         # 根构建的 artifact（Maven parent 等）
     "repo_name": "payload.repo_name",                 # 项目仓库目录名
     "base_package": "payload.base_package?",          # Java 包根（非 Java 项目可空）
     "build_cmd": "payload.build_cmd",                 # 后端构建/测试命令（如 ./mvnw、mvn、./gradlew）
@@ -48,7 +50,23 @@ PAYLOAD_PLACEHOLDERS = {
     "error_code_prefix": "payload.error_code_prefix",  # 错误码前缀（文档里的例子 XXXX0073-E）
     "error_code": "ids.error_code",                   # 错误码正则
 }
-NEEDS["install"] += list(dict.fromkeys(PAYLOAD_PLACEHOLDERS.values()))
+# modules（顶层，必需）から作る占位符。各要素 {"name", "kind", "role"}，kind は MODULE_KINDS のどれか。
+# kind=api のうち "main": true がちょうど 1 つ、kind=frontend がちょうど 1 つ必要。
+MODULE_KINDS = ("api", "lib", "service", "frontend", "build")
+MODULE_PLACEHOLDERS = {
+    "modules_list": "AGENTS.md のモジュール一覧（各行「  - `name`: role」）",
+    "modules_inline": "「`a` · `b` · …」",
+    "modules_slash": "「a / b / …」",
+    "main_module": "主 API モジュール（kind=api かつ main=true）",
+    "other_api_modules": "主以外の API モジュール「a / b」",
+    "other_api_test_cmds": "主以外の API モジュールのテストコマンド（1 行ずつ）",
+    "frontend_module": "フロントエンドのモジュール（kind=frontend）",
+    "base_package_path": "base_package の . を / にしたもの",
+    "wrapper_sep_before": "「、<build_wrapper>」（空なら空）",
+    "wrapper_sep_after": "「<build_wrapper>、」（空なら空）",
+    "wrapper_code_before": "「、`<build_wrapper>`」（空なら空）",
+}
+NEEDS["install"] += list(dict.fromkeys(PAYLOAD_PLACEHOLDERS.values())) + ["modules"]
 PH_TOKEN_RE = re.compile(r"\{\{([a-z_]+)\}\}")
 
 
@@ -160,7 +178,39 @@ def payload_values(cfg: dict) -> dict:
         if not key.endswith("?") and not v:
             die(f"{k} 为空（payload 占位符 {{{{{name}}}}} 用）")
         vals[name] = v
+    vals.update(module_values(get(cfg, "modules"), vals))
     return vals
+
+
+def module_values(mods, vals: dict) -> dict:
+    if not isinstance(mods, list) or not mods:
+        die("modules は空でないリスト（[{\"name\", \"kind\", \"role\"}, …]）")
+    for i, m in enumerate(mods):
+        if not isinstance(m, dict) or not all(isinstance(m.get(k), str) and m.get(k) for k in ("name", "kind", "role")):
+            die(f"modules[{i}] に name / kind / role（空でない文字列）が要る: {m!r}")
+        if m["kind"] not in MODULE_KINDS:
+            die(f"modules[{i}].kind={m['kind']!r} は {list(MODULE_KINDS)} のどれか")
+    main = [m for m in mods if m["kind"] == "api" and m.get("main") is True]
+    fe = [m for m in mods if m["kind"] == "frontend"]
+    if len(main) != 1:
+        die(f"modules: kind=api かつ \"main\": true のモジュールがちょうど 1 つ要る（今 {len(main)} 個）")
+    if len(fe) != 1:
+        die(f"modules: kind=frontend のモジュールがちょうど 1 つ要る（今 {len(fe)} 個）")
+    others = [m["name"] for m in mods if m["kind"] == "api" and m is not main[0]]
+    bw = vals.get("build_wrapper", "")
+    return {
+        "modules_list": "\n".join(f"  - `{m['name']}`: {m['role']}" for m in mods),
+        "modules_inline": " · ".join(f"`{m['name']}`" for m in mods),
+        "modules_slash": " / ".join(m["name"] for m in mods),
+        "main_module": main[0]["name"],
+        "other_api_modules": " / ".join(others) or "-",
+        "other_api_test_cmds": "\n".join(f"{vals['build_cmd']} -pl {n} -am test -DskipTests=false" for n in others),
+        "frontend_module": fe[0]["name"],
+        "base_package_path": vals.get("base_package", "").replace(".", "/"),
+        "wrapper_sep_before": f"、{bw}" if bw else "",
+        "wrapper_sep_after": f"{bw}、" if bw else "",
+        "wrapper_code_before": f"、`{bw}`" if bw else "",
+    }
 
 
 def _render(text: str, vals: dict, where: str) -> str:

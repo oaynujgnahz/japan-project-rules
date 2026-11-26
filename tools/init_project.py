@@ -124,6 +124,7 @@ def scan_build(root: Path) -> Dict[str, dict]:
         out["scan.modules"] = {"value": [m for m, _ in mods], "evidence": [f"pom.xml:{ln} <module>{m}</module>" for m, ln in mods[:5]]}
         out["build.backend_test"] = {"value": f"{wrapper} -pl <module> -am test -DskipTests=false", "evidence": ["pom.xml" + (" + mvnw" if wrapper != "mvn" else "")]}
         out["payload.build_cmd"] = {"value": wrapper, "evidence": ["pom.xml" + (" + mvnw" if wrapper != "mvn" else "")]}
+        out["payload.root_artifact"] = {"value": art.group(1) if art else None, "evidence": out["detect.contains"]["evidence"]}
         chk = {"name": "maven", "cmd": f"{wrapper} -v", "expect": jv.group(1) if jv else ""}
         out["env_checks"] = {"value": [chk], "evidence": [f"pom.xml:{_line_of(t, jv.start())} {jv.group(0).strip()}"] if jv else ["pom.xml（未写 Java 版本，只检查能运行）"]}
     elif gradle:
@@ -149,6 +150,7 @@ def scan_build(root: Path) -> Dict[str, dict]:
         out["scan.modules"] = {"value": [], "evidence": []}
         out["build.backend_test"] = {"value": "", "evidence": ["package.json（无后端构建）"]}
         out["payload.build_cmd"] = {"value": "npm", "evidence": ["package.json"]}
+        out["payload.root_artifact"] = {"value": js.get("name") or None, "evidence": ["package.json name"]}
         out["env_checks"] = {"value": [], "evidence": []}
     # frontend
     fe = next((d for d in (root / "frontend", root) if (d / "package.json").exists()), None)
@@ -344,8 +346,21 @@ def build_questions(example: dict, scan: Dict[str, dict], loc_scan: Optional[dic
     q("payload.error_code_prefix", "detected", "错误码前缀（规则文档里的错误码例子 XXXX0073-E 用）",
       detected=pre.group(0) if pre else None, evidence=[f"ids.error_code 候选 {best_ec}"] if best_ec else [],
       ref=ex("payload.error_code_prefix"))
+    mods = (scan.get("scan.modules") or {}).get("value") or []
+    ld = str((scan.get("i18n.locale_dir") or {}).get("value") or "")
+    fe_dir = ld.split("/")[0] if "/" in ld else None  # locale 目录的第一段（如 frontend/src/locale → frontend）
+    draft = [OrderedDict([("name", m), ("kind", "frontend" if m == fe_dir else ("api" if m.lower().endswith("api") else "lib")),
+                          ("role", "<<未設定: role>>")]) for m in mods]
+    if fe_dir and fe_dir not in mods:
+        draft.append(OrderedDict([("name", fe_dir), ("kind", "frontend"), ("role", "<<未設定: role>>")]))
+    q("modules", "required",
+      "构建模块一览（JSON 列表）：每项 {name, kind: api|lib|service|frontend|build, role: AGENTS.md 里的一行英文说明}；"
+      "kind=api 中恰好一个加 \"main\": true（文档里的主 API 模块），kind=frontend 恰好一个。下面是按构建文件起草的，role 要填",
+      evidence=[json.dumps(draft, ensure_ascii=False)] + list((scan.get("scan.modules") or {}).get("evidence") or []),
+      ref=ex("modules"))
     det = ["i18n.locale_dir", "unit_test.locale_files", "detect.file", "detect.contains", "local_only", "executable",
-           "env_checks", "build.backend_test", "build.frontend", "payload.repo_name", "payload.build_cmd", "payload.base_package"]
+           "env_checks", "build.backend_test", "build.frontend", "payload.repo_name", "payload.build_cmd", "payload.base_package",
+           "payload.root_artifact"]
     if scan:
         det += ["scan.build_tool", "scan.modules", "scan.base_package"]
     for k in det:
@@ -493,7 +508,8 @@ def guard_out_path(out: Path, example_path: Path) -> Optional[Path]:
 def self_test(cfg_path: Path, cfg: dict, project: Optional[Path], confirmed_hits: Optional[Dict[str, int]]) -> List[str]:
     log = []
     pv = pc.payload_values(pc.load(str(cfg_path), "install"))
-    log.append("自检 0 OK：install.sh 的 payload 占位符都有值（" + ", ".join(f"{k}={v!r}" for k, v in pv.items()) + "）")
+    log.append("自检 0 OK：install.sh 的 payload 占位符都有值（" + ", ".join(
+        f"{k}={pv[k]!r}" for k in list(pc.PAYLOAD_PLACEHOLDERS) + ["main_module", "frontend_module"]) + "）")
     if project is None:
         log.append("自检 1/2 跳过：--no-scan（读不到代码）。到能读到代码的机器上跑 --verify 补指纹。")
         return log

@@ -37,7 +37,7 @@ HTML_COMMENT = re.compile(r"<!--([\s\S]*?)-->")
 
 
 def pending_path(conversation_id):
-    base = os.path.join(tempfile.gettempdir(), "cmpf-cursor-hooks")
+    base = os.path.join(tempfile.gettempdir(), "{{name}}-cursor-hooks")
     try:
         os.makedirs(base, exist_ok=True)
     except OSError:
@@ -159,7 +159,7 @@ def handle_after_file_edit(payload):
     samples = "; ".join(all_hits[:5])
     message = (
         "BLOCKER: Simplified-Chinese comment detected in source (comments must be "
-        "Japanese or English per cmpf-core / AGENTS.md). Fix immediately: rewrite "
+        "Japanese or English per project-core / AGENTS.md). Fix immediately: rewrite "
         "those comments to Japanese (preferred) or English.\n"
         "file: %s\n"
         "samples: %s" % (rel, samples)

@@ -33,7 +33,7 @@
 | 命令 | HEAD 基线 | 改动后 | 新增失败 |
 |------|------|------|------|
 | `{{build_cmd}} -pl … -am test -DskipTests=false` | | | |
-| `cd frontend && npm run build` | | | |
+| `cd {{frontend_module}} && npm run build` | | | |
 | `cd e2e && npm test` | | | |
 
 改修前就失败的测试（类名、原因、与本件无关的根据）：

@@ -52,13 +52,13 @@ alwaysApply: true
 
 ## 环节 × 必用 Skill / MCP
 
-<!-- [{{system_name}}] cmpf-report-file-io、PostgreSQL MCP、e2e/ 属 {{system_name}} 专属 -->
+<!-- [{{system_name}}] {{name}}-report-file-io、PostgreSQL MCP、e2e/ 属 {{system_name}} 专属 -->
 | 环节 | 必用 | 禁止 |
 |------|------|------|
 | 要件/设计 | `md-design-doc`、`brainstorming` | 无 docs 输出 |
 | 功能开发 | 同步更新 `docs/{機能}/` 画面·API·验收（`design-docs.mdc` §开发时设计留存） | 代码与设计脱节 |
 | 理解现状 | Grep / SemanticSearch / `explore`；画面改修加 `ppt-first-ui.mdc` | 猜测业务 |
-| 文件 I/O | `cmpf-report-file-io` | 自造下载/取込逻辑 |
+| 文件 I/O | `{{name}}-report-file-io` | 自造下载/取込逻辑 |
 | 实现后评审 | `.cursor/rules/review.mdc` checklist | 跳过比对 |
 | Code Review | `review-bugbot`（大变更） | — |
 | Security | `review-security`（auth/SQL/配置） | — |
@@ -82,6 +82,6 @@ MCP 启用：复制 `.cursor/mcp.json.example` → `.cursor/mcp.json`（本地�
 ## 代码样例索引（功能开发前必读同类）
 
 <!-- [{{system_name}}] 代码样例和设计书范例路径均为 {{system_name}} -->
-- JUnit/Excel/PPT：`carbonapi/src/test/java/.../excel/`、`.../report/`
+- JUnit/Excel/PPT：`{{main_module}}/src/test/java/.../excel/`、`.../report/`
 - 设计书范例：`docs/PCF算定_Excel取込/`、`docs/报告出力_排出量PPT/`
 - E2E 范例：`e2e/tests/`

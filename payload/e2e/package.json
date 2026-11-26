@@ -1,5 +1,5 @@
 {
-  "name": "cmpf-e2e",
+  "name": "{{name}}-e2e",
   "private": true,
   "scripts": {
     "test": "playwright test",

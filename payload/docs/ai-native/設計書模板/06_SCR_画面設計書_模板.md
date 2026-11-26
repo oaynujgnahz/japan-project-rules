@@ -6,7 +6,7 @@
 | 要件来源（PPT） | `{文件名.pptx}` slide {n} / 注釈 {②④…} |
 | 関連 | [API-{id}](../07_API設計書/API-{id}.md) · [親画面](./SCR-xxx.md) |
 | UI 参照 | Figma / `05_UI設計/`（**見た目はこちら；本 MD 不写色・像素**） |
-| 既存実装 | `{frontend/.../xxx.vue}` |
+| 既存実装 | `{{{frontend_module}}/.../xxx.vue}` |
 | 実装状態 | todo / wip / ✅ / ⏳ {未达 PPT 的项} |
 
 ## 1. 画面概要
@@ -124,4 +124,4 @@ sequenceDiagram
 
 | 业务节 | 路径 |
 |--------|------|
-| {…} | `{frontend/...}` |
+| {…} | `{{{frontend_module}}/...}` |

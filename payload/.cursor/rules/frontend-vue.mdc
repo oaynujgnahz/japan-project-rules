@@ -1,6 +1,6 @@
 ---
 description: {{system_name}} Vue 3 + TypeScript + Naive UI 前端规范
-globs: "frontend/**/*.{vue,ts,tsx}"
+globs: "{{frontend_module}}/**/*.{vue,ts,tsx}"
 alwaysApply: false
 ---
 
@@ -11,14 +11,14 @@ alwaysApply: false
 
 - Vue 3 Composition API（`<script setup>` 或 `defineComponent`）
 - Naive UI、vue-i18n、Pinia、ECharts、TypeScript、Vite
-- API：`frontend/src/apis/`；Views：`frontend/src/views/`
+- API：`{{frontend_module}}/src/apis/`；Views：`{{frontend_module}}/src/views/`
 - Router：`router/index.ts`、`routes-new.ts`、`routes-classic.ts` 保持一致
-- Stores：`frontend/src/store/`
+- Stores：`{{frontend_module}}/src/store/`
 
 ## 实装顺序
 
-0. **画面改修**（列/按钮/布局变更）：`ppt-first-ui.mdc`（硬规则见 `cmpf-core.mdc` §画面改修 Gate）
-1. 查 `frontend/src/components/` 与 `hook/LocalNaiveUI.ts` 是否已有通用组件
+0. **画面改修**（列/按钮/布局变更）：`ppt-first-ui.mdc`（硬规则见 `project-core.mdc` §画面改修 Gate）
+1. 查 `{{frontend_module}}/src/components/` 与 `hook/LocalNaiveUI.ts` 是否已有通用组件
 2. 无则新规组件追加到 `components/` 后再引用（见 `docs/ai-native/UI規範.md`）
 <!-- [{{system_name}}] ja/en 同步、locale/zh 不维护属 {{system_name}} 多语言要求 -->
 3. 可见文案 `$t()` / `useI18n()`；**ja / en 同步**（`locale/zh` 不维护）

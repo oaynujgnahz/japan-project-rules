@@ -3,13 +3,13 @@
 Cursor Agent 在 `workflow.mdc` 中引用的 Skills **不在 {{system_name}} 仓库内**，需每人安装一次（或团队统一分发）。
 
 > 未安装的 Skill：**跳过并在回复 / RV 中注明**，按下文「C. 仓库内速查」执行，不视为 Blocker。
-> 规则仓库 `japan-project-rules` 的 `install.sh` 会把 `md-design-doc`、`cmpf-report-file-io` 安装到 `~/.cursor/skills/`；`verification-before-completion`、`review-bugbot`、`review-security` 不在规则仓库内（可选）。
+> 规则仓库 `japan-project-rules` 的 `install.sh` 会把 `md-design-doc`、`{{name}}-report-file-io` 安装到 `~/.cursor/skills/`；`verification-before-completion`、`review-bugbot`、`review-security` 不在规则仓库内（可选）。
 
 ## 必装（{{system_name}} 开发）
 
 | Skill | 用途 | 安装 |
 |-------|------|------|
-| **cmpf-report-file-io** | Excel/PPT/PDF/CSV 取込出力、Content-Disposition | 见下 |
+| **{{name}}-report-file-io** | Excel/PPT/PDF/CSV 取込出力、Content-Disposition | 见下 |
 | **md-design-doc** | Markdown 設計書（Future 06/07） | 见下 |
 
 ## 安装方式（任选其一）
@@ -19,7 +19,7 @@ Cursor Agent 在 `workflow.mdc` 中引用的 Skills **不在 {{system_name}} 仓
 ```bash
 # Cursor（示例路径，以本机为准）
 mkdir -p ~/.cursor/skills
-cp -r /path/to/shared/cmpf-report-file-io ~/.cursor/skills/
+cp -r /path/to/shared/{{name}}-report-file-io ~/.cursor/skills/
 cp -r /path/to/shared/md-design-doc ~/.cursor/skills/
 ```
 
@@ -27,7 +27,7 @@ cp -r /path/to/shared/md-design-doc ~/.cursor/skills/
 
 ```bash
 mkdir -p ~/.codex/skills
-# 同上复制 cmpf-report-file-io
+# 同上复制 {{name}}-report-file-io
 ```
 
 ### C. 仓库内速查（无完整 skill 时）

@@ -11,20 +11,20 @@ alwaysApply: true
 <!-- [{{system_name}}] 本节整节为 {{system_name}} 技术栈、Maven 模块和目录路径；将来由项目配置替换 -->
 ## Project
 
-Java 8 / Spring Boot 2.5.14 + Vue 3 + TS + Vite。Maven：`carbon-parent`（`{{build_cmd}}`）。  
-模块：`common` · `carbonapi` · `taskapi` · `userapi` · `message` · `frontend` · `report`。
+Java 8 / Spring Boot 2.5.14 + Vue 3 + TS + Vite。Maven：`{{root_artifact}}`（`{{build_cmd}}`）。  
+模块：{{modules_inline}}。
 
-路径：Java `{{base_package}}.*` · mapper/SQL `resources/mapper/` · 前端 `frontend/src/{apis,views,router,store,locale}` · 设计书 `docs/{機能}/`。
+路径：Java `{{base_package}}.*` · mapper/SQL `resources/mapper/` · 前端 `{{frontend_module}}/src/{apis,views,router,store,locale}` · 设计书 `docs/{機能}/`。
 
 <!-- [{{system_name}}] 本节整节为 {{system_name}} 构建命令（{{build_cmd}}、frontend npm、Node v16.14.0、naive-ui patch）；将来由项目配置的 BUILD_CMD 替换 -->
 ## Commands
 
 ```bash
 {{build_cmd}} -pl <module> -am test -DskipTests=false   # 默认 skipTests=true
-cd frontend && npm run build
+cd {{frontend_module}} && npm run build
 ```
 
-Node v16.14.0 · 保留 `frontend/patches/naive-ui+2.35.0.patch`。
+Node v16.14.0 · 保留 `{{frontend_module}}/patches/naive-ui+2.35.0.patch`。
 
 ## Coding（全局）
 
@@ -43,8 +43,8 @@ Node v16.14.0 · 保留 `frontend/patches/naive-ui+2.35.0.patch`。
 ## Agent
 
 - 默认中文回复
-<!-- [{{system_name}}] cmpf-report-file-io skill 为 {{system_name}} 专属 -->
-- 文件 I/O → `cmpf-report-file-io` skill（`install.sh` 安装到 `~/.cursor/skills/`；没有则读既存实现并注明，见 `docs/ai-native/skills/README.md`）
+<!-- [{{system_name}}] {{name}}-report-file-io skill 为 {{system_name}} 专属 -->
+- 文件 I/O → `{{name}}-report-file-io` skill（`install.sh` 安装到 `~/.cursor/skills/`；没有则读既存实现并注明，见 `docs/ai-native/skills/README.md`）
 - 設計書 → `md-design-doc`；新功能在「写设计书」阶段填 `验收标准_模板.md`
 <!-- [{{system_name}}] 06_画面設計書 / 07_API設計書 目录结构属 {{system_name}} 设计书模板 -->
 - **开发时**：实装逻辑须同步写入对应 `06_画面設計書` / `07_API設計書` / `詳細設計書` / `验收标准`（`design-docs.mdc` §开发时设计留存）

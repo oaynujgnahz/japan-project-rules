@@ -6,12 +6,12 @@ alwaysApply: false
 
 # Testing & Verification
 
-<!-- [{{system_name}}] JUnit 4、{module} 路径、carbonapi 测试样例属 {{system_name}} 技术栈 -->
+<!-- [{{system_name}}] JUnit 4、{module} 路径、{{main_module}} 测试样例属 {{system_name}} 技术栈 -->
 ## 单体测试（JUnit 4）
 
 - 路径：`{module}/src/test/java/`
 - 命名：`{ClassUnderTest}Test.java`
-- Excel/PPT/报告：`carbonapi/.../excel/*Test.java`、`.../report/*Test.java`
+- Excel/PPT/报告：`{{main_module}}/.../excel/*Test.java`、`.../report/*Test.java`
 - 测试方法名、`@DisplayName`、注释中不得出现 BR/AC/Q 编号、`docs/` 路径或设计书名称；用业务行为描述。
 
 ## 变更后最低验证
@@ -31,7 +31,7 @@ alwaysApply: false
 ```bash
 {{build_cmd}} -pl <module> -am test -DskipTests=false
 {{build_cmd}} -pl <module> -am test -DskipTests=false -Dtest=<TestClass>
-cd frontend && npm run build
+cd {{frontend_module}} && npm run build
 ```
 
 - 失败 → 读 stack trace → 最小修复 → 重跑
