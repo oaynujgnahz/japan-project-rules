@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""単体テスト項目 xlsx 生成 + lint（テンプレート xlsx を OOXML 最小修改）
+"""単体テスト項目 xlsx 生成 + lint（仓库模板 OOXML 最小修改）
 
-用法:
-  python3 gen_ut_xlsx.py cases.json --config project.json -o docs/{機能}/単体テスト項目_{機能}.xlsx
-                         [--design docs/{機能}/ [API設計書_x.xlsx 画面設計書_x.xlsx ...]]
-                         [--template テンプレート.xlsx] [--locale-dir frontend/src/locale]
-                         [--trace-report trace.md] [--strict] [--trace-col]
-  python3 gen_ut_xlsx.py --schema               # cases.json の骨架を表示
+用法（--config は init.sh で生成した project.json。必須）:
+  python3 gen_ut_xlsx.py cases.json -o 単体テスト項目_{機能}.xlsx --config project.json
+                         [--design design.json|docs_dir|設計書.xlsx]
+                         [--locale-dir DIR] [--template X.xlsx] [--trace-col] [--strict] [--trace-report trace.md]
+  python3 gen_ut_xlsx.py --schema          # 打印 cases.json 骨架
   python3 gen_ut_xlsx.py --lint-only cases.json --config project.json [--design ...]
-  --config（init.sh で生成した項目配置）は必須。錯誤码格式・locale 目录・语言・各语言文件/文言格式/语言名都从这里取，
-  没有配置、示例配置（_example）、缺键、占位符一律报错退出。
 
-設計要点（.cursor/rules/unit-test-case-docs.mdc と一致させる）:
-  * テンプレート xlsx を底にし、ZIP 成員は原样コピー。置き換えるのは
-    画面レイアウト判定 / 画面操作処理判定 / 項目チェック判定 の sheetData と 項目総計 の一部セルだけ
-    （openpyxl で読んで保存し直す「整本重存」はしない＝拡張データ入力規則（下拉）が消えないように）。
-  * 試験観点 sheet・隠し sheet DB書き込み判定 はバイト単位で不変（生成後に検証）。
-  * sharedStrings は既存 <si>（振り仮名 rPh 含む）を保持し、新しい文字列だけ追加。
-  * Case 行数がテンプレートの予約行を超えても、入力規則（最新結果 / 試験観点 / 表示タイプ / 詰め方）、
-    オートフィルタ、_FilterDatabase / Print_Area、項目総計 の COUNTIF 範囲を実際の行に合わせて伸縮する。
-    calcChain は削除し、開いたとき全再計算。
-  * 生成後に openpyxl で読み直し、sheet 構成・隠し状態・項目総計の範囲と CASE 数を実際の行数で照合する。
-  * 依存: 標準ライブラリ + openpyxl。
+項目配置から読むもの: ids.error_code（错误码正则）、i18n.languages（先頭＝正文語）、i18n.locale_dir（--locale-dir 省略時、
+カレント＝プロジェクトのルートからの相対）、unit_test.locale_files（各言語の locale ファイル、先に読んだ方が優先）、
+unit_test.error_message_templates / unit_test.language_labels（code 行の展開）、unit_test.template（テンプレート）。
+
+设计要点（与仓库 docs/単体テスト項目テンプレート/README.md 一致）:
+  * 以 templates/単体テスト項目_テンプレート.xlsx 为底，ZIP 成员原样拷贝，只替换
+    画面レイアウト判定 / 画面操作処理判定 / 項目チェック判定 的 sheetData 和 項目総計 的少数单元格。
+  * 試験観点 sheet、隐藏的 DB書き込み判定 sheet 字节级不变（生成后校验）。
+  * sharedStrings 保留原始 <si>（含振假名 rPh），只追加新字符串
+    （仓库旧 helper 会把振假名拼进表头，如「試験項目シケンコウモク」——这里修正）。
+  * 同步更新：数据验证范围（最新結果 / 試験観点下拉 / 表示タイプ / 詰め方）、自动筛选、
+    _FilterDatabase / Print_Area、項目総計 COUNTIF 范围；删除旧 calcChain，打开时全量重算。
+  * 画面レイアウト判定 底部的凡例（記号・データタイプ・表示タイプ一覧）挪到最后一条 Case 之后保留，
+    表示タイプ下拉的引用随之更新。
 """
 from __future__ import annotations
 
@@ -39,16 +39,14 @@ from typing import Dict, List, Optional, Tuple
 from xml.sax.saxutils import escape
 
 HERE = Path(__file__).resolve().parent
-# [CMPF] 模板：模板文件名「単体テスト項目_テンプレート.xlsx」和后备位置 docs/ai-native/ 是 CMPF 仓库的约定
-TEMPLATE_NAME = "単体テスト項目_テンプレート.xlsx"
-# テンプレートの探索順: --template > このツールの templates/ > カレントの docs/ai-native/
-TEMPLATE_CANDIDATES = [HERE.parent / "templates" / TEMPLATE_NAME, Path("docs") / "ai-native" / TEMPLATE_NAME]
-# locale 目录・语言・文件名・错误码格式全部取自 --config 的项目配置（i18n.locale_dir / i18n.languages /
-# unit_test.locale_files / ids.error_code），不回落任何项目的默认值。--locale-dir 只覆盖目录。
-CFG: dict = {}
-LANGS: List[str] = []          # i18n.languages。先頭が本文言語（多言語対応チェック以外の行）
+SKILL = HERE.parent
+sys.path.insert(0, str(HERE.parents[1]))  # tools/project_config.py
+import project_config  # noqa: E402
 
-# [CMPF] 模板：試験観点 16 词・表示タイプ・詰め方 取自 CMPF 单体模板的 試験観点 sheet 和 画面レイアウト判定 凡例
+TEMPLATE_NAME = "単体テスト項目_テンプレート.xlsx"
+# テンプレートの探索順: --template > unit_test.template > このツールの templates/ > カレントの docs/ai-native/
+TEMPLATE_CANDIDATES = [SKILL / "templates" / TEMPLATE_NAME, Path("docs") / "ai-native" / TEMPLATE_NAME]
+
 VIEWPOINTS = [
     "画面レイアウト", "分岐網羅", "設定値", "データパターン", "境界値", "初期化チェック",
     "ロールチェック", "NULL値チェック", "デグレ試験", "性能改善対応", "他システム連携IF",
@@ -57,20 +55,14 @@ VIEWPOINTS = [
 DISPLAY_TYPES = ["TT", "BTN", "LBL", "DRP", "TXT", "RBT", "CHK", "INP", "CMB", "TBL", "IB", "LNK"]
 ALIGN = ["左", "中", "右", "-"]
 VAGUE = {"正常", "正常に動作する", "正常終了", "正しく動作する", "問題ない", "問題なし", "OK", "仕様通り",
-         "設計通り", "想定通り", "同上", "正常に表示される", "正常に処理される", "成功", "可", "可能", "できる",
-         "許可", "許可される", "NG にならない"}
-# [CMPF] 正文语言：Case 正文要求日文；ZH_ONLY 用于 meta.lang=ja 时检出简体中文混入（见 lint 的 text_checks）
+         "設計通り", "想定通り", "同上", "正常に表示される", "正常に処理される", "正常", "成功", "可"}
 ZH_ONLY = set("这们为没时后对个说么样还过从让发录删页确认击选择据项请显隐设输键钮创该页时间应")
-# メッセージコードの書式は項目配置 ids.error_code（configure() で設定）。Locale 読取・言語別展開・言語行チェックで共用
-CODE_RE: "re.Pattern" = None  # type: ignore[assignment]
-# 追溯 ID（BR/AC/Q）の書式は項目配置 unit_test.trace_id_regex（configure() で設定）
-TRACE_RE: "re.Pattern" = None  # type: ignore[assignment]
-ANY_ID_RE = re.compile(r"(?<![\w-])[A-Z]{1,4}-[\w-]*\d(?![\w-])")
-VERIFY_VALUES = {"JUnit", "結合", "手動"}
+CFG: dict = {}
+LANGS: List[str] = []
+CODE_RE: "re.Pattern" = None  # configure() で ids.error_code から作る
 FUNC_RE = re.compile(r"\b[a-z]+[A-Z][A-Za-z0-9]*\s*\(|\b\w+\.(java|vue|ts|tsx|xml)\b|src/main/|src/views/")
 
 # 样式 ID（取自模板数据行，同仓库 scripts/ooxml_unit_test_workbook.py）
-# [CMPF] 模板：以下样式 ID 是 CMPF 单体模板 styles.xml 的 cellXfs 编号（按列 A〜AA / A〜L / A〜K），换模板必须重取
 LAYOUT_SECTION_STYLE = "33"
 LAYOUT_STYLES = {"A": "83", "B": "82", "C": "70", "D": "82", "E": "68", "F": "70", "G": "68", "H": "68",
                  "I": "68", "J": "82", "K": "68", "L": "82", "M": "68", "N": "69", "O": "68", "P": "69",
@@ -82,59 +74,55 @@ OP_STYLES = {"A": "55", "B": "56", "C": "79", "D": "78", "E": "57", "F": "57", "
 CHECK_STYLES = {"A": "55", "B": "87", "C": "67", "D": "67", "E": "60", "F": "82", "G": "60", "H": "59",
                 "I": "60", "J": "61", "K": "67"}
 
-# [CMPF] 模板：6 个 sheet 的 XML 位置按 CMPF 模板顺序写死（sheet1 試験観点 / sheet2 項目総計 / sheet3〜5 三个 Case sheet / sheet6 DB書き込み判定）
 SHEET_FILES = {"summary": "xl/worksheets/sheet2.xml", "layout": "xl/worksheets/sheet3.xml",
                "operation": "xl/worksheets/sheet4.xml", "check": "xl/worksheets/sheet5.xml"}
 FIXED_FILES = ["xl/worksheets/sheet1.xml", "xl/worksheets/sheet6.xml"]  # 試験観点 / DB書き込み判定
 
 SCHEMA = {
-    "_comment": "サンプル骨架（架空）。値はすべて置き換えること",
-    "meta": {"feature": "{機能}", "author": "", "created": "YYYY-MM-DD", "updater": "", "updated": "",
-             "design_doc": "docs/{機能}/", "lang": "ja"},
+    "meta": {"feature": "PCF算定_Excel取込", "author": "AI", "created": "2026-10-09", "updater": "", "updated": "",
+             "design_doc": "docs/{機能}/ または 設計書.xlsx", "lang": "ja"},
     "layout": [{"section": "【SCR-xxx 画面名】エリア名", "ref": "SCR-xxx", "cases": [
         {"viewpoint": "画面レイアウト", "name": "項目名", "type": "BTN", "label": "ラベル表示内容（画面文言そのまま）",
-         "max_len": "-", "required": "-", "align": "左", "format": "-", "dtype": "-", "note": "特記事項（判定できる補足）",
-         "ref": "SCR-xxx / BR-xx / AC-xx", "verify": "結合"}]}],
+         "max_len": "-", "required": "-", "align": "左", "format": "-", "dtype": "-", "note": "特記事項（可判定な補足）",
+         "ref": "SCR-xxx #3 / slide 4"}]}],
     "operation": [{"section": "【SCR-xxx / API-xxx】シナリオ", "ref": "API-xxx", "cases": [
         {"viewpoint": "分岐網羅", "item": "試験項目", "step": "処理ステップ（操作）", "branch": "分岐（条件）",
-         "branch1": "-", "branch2": "-", "expected": "予想結果（画面表示・値・DB 結果を具体的に）",
-         "ref": "BR-xx / AC-xx / Q-xx", "verify": "JUnit"}]}],
-    "check": [{"section": "【SCR-xxx】入力チェック", "ref": "SCR-xxx", "cases": [
-        {"viewpoint": "境界値", "field": "項目名", "screen": "画面名", "branch1": "入力値・条件",
-         "branch2": "-", "expected": "予想結果", "ref": "BR-xx"},
-        {"viewpoint": "例外処理の網羅", "field": "項目名", "screen": "画面名", "branch1": "未入力",
-         "code": "XXXX0000-E", "pair": True, "ref": "AC-xx",
-         "_comment": "code 指定時は locale から文言を引き、日本語行＋英語行（多言語対応チェック）を自動展開"}]}],
+         "branch1": "-", "branch2": "-", "expected": "予想結果（可判定）", "ref": "BR-03 / BL-05 / AC-01"}]}],
+    "check": [{"section": "（任意）【API-xxx 行チェック】", "cases": [
+        {"viewpoint": "例外処理の網羅", "field": "項目名", "screen": "画面", "branch1": "入力値・条件",
+         "branch2": "-", "expected": "予想結果", "ref": "§3-1"},
+        {"viewpoint": "例外処理の網羅", "field": "プロセス", "screen": "取込ダイアログ", "branch1": "空欄",
+         "code": "<ids.error_code に合うコード>", "pair": True, "ref": "A",
+         "_comment": "code 指定時は locale から文言を引き、i18n.languages の各言語の行（2 言語目以降は多言語対応チェック）を自動展開"}]}],
 }
 
 
 # ---------------------------------------------------------------- locale
 class Locale:
-    """i18n.languages の各言語について unit_test.locale_files を読み、{言語: {コード: 文言}} を作る"""
+    """i18n.languages の各言語について unit_test.locale_files を順に読む（先に読んだ方が優先）"""
 
     def __init__(self, d: Optional[Path]):
-        self.msgs: Dict[str, Dict[str, str]] = {lang: {} for lang in LANGS}
+        self.msgs: Dict[str, Dict[str, str]] = {l: {} for l in LANGS}
         if not d:
             return
-        body = CFG["ids"]["error_code"]
-        pat = re.compile(rf"'(?P<code>{body})'\s*:\s*(?:'(?P<v1>(?:\\'|[^'])*)'|\n\s*'(?P<v2>(?:\\'|[^'])*)')", re.M)
-        fn = re.compile(rf"'(?P<code>{body})'\s*:\s*\(\{{[^}}]*\}}\)\s*=>\s*`(?P<v>[^`]*)`")
-        for lang in LANGS:
+        pat = re.compile(r"'(" + CODE_RE.pattern + r")'\s*:\s*(?:'((?:\\'|[^'])*)'|\n\s*'((?:\\'|[^'])*)')", re.M)
+        cands = {l: [d / f for f in CFG["unit_test"]["locale_files"][l]] for l in LANGS}
+        for lang, paths in cands.items():
             target = self.msgs[lang]
-            for rel in CFG["unit_test"]["locale_files"][lang]:
-                p = d / rel
+            for p in paths:
                 if not p.exists():
                     continue
                 text = p.read_text(encoding="utf-8")
-                for m in fn.finditer(text):
-                    target.setdefault(m.group("code"), re.sub(r"\$\{[^}]*\}", "{0}", m.group("v")))
+                for m in re.finditer(r"'(" + CODE_RE.pattern + r")'\s*:\s*\(\{[^}]*\}\)\s*=>\s*`([^`]*)`", text):
+                    target.setdefault(m.group(1), re.sub(r"\$\{[^}]*\}", "{0}", m.group(2)))
                 for m in pat.finditer(text):
-                    v = (m.group("v1") or m.group("v2") or "").replace("\\'", "'")
-                    if v and not v.startswith("(") and m.group("code") not in target:
-                        target[m.group("code")] = v
+                    v = (m.group(2) or m.group(3) or "").replace("\\'", "'")
+                    if v and not v.startswith("(") and m.group(1) not in target:
+                        target[m.group(1)] = v
 
     @property
     def primary(self) -> Dict[str, str]:
+        """正文語（i18n.languages の先頭）の文言"""
         return self.msgs[LANGS[0]]
 
     def msg(self, code: str, lang: str, param: Optional[str] = None) -> Optional[str]:
@@ -146,44 +134,37 @@ class Locale:
         return raw
 
 
-def _msg_text(lang: str, text: str, code: str) -> str:
-    return CFG["unit_test"]["error_message_templates"][lang].replace("{code}", code).replace("{text}", text)
-
-
+# ---------------------------------------------------------------- case normalisation
 def _label(lang: str) -> str:
     return CFG["unit_test"]["language_labels"][lang]
 
 
-# ---------------------------------------------------------------- case normalisation
-# code 行は i18n.languages の順に展開する：先頭言語の行（分岐2＝その言語名）＋ 残りの言語ごとに 多言語対応チェック 行。
-# 文言の書式は unit_test.error_message_templates、言語名は unit_test.language_labels。"pair": false なら先頭言語の行だけ。
+def _err_msg(lang: str, text: str, code: str) -> str:
+    return CFG["unit_test"]["error_message_templates"][lang].replace("{code}", code).replace("{text}", text)
+
+
 def expand_check_cases(groups: List[dict], loc: Locale, warnings: List[str]) -> List[dict]:
     out = []
-    first, others = LANGS[0], LANGS[1:]
     for g in groups:
         rows = []
         for c in g.get("cases", []):
             code = c.get("code")
             if code and not c.get("expected"):
-                txt = loc.msg(code, first, c.get(f"param_{first}", c.get("param")))
-                if txt is None:
-                    warnings.append(f"[check] {code} の {first} 文言が locale に無い（expected を手書きするか locale を確認）")
-                    txt = "（文言要確認）"
-                base = dict(c)
-                base["branch2"] = c.get("branch2") or _label(first)
-                base["expected"] = _msg_text(first, txt, code)
-                rows.append(base)
-                if c.get("pair", True):
-                    for lang in others:
-                        t = loc.msg(code, lang, c.get(f"param_{lang}", c.get("param")))
-                        if t is None:
-                            warnings.append(f"[check] {code} の {lang} 文言が locale に無い")
-                            t = "(message TBD)"
-                        e = dict(c)
-                        e["viewpoint"] = "多言語対応チェック"
-                        e["branch2"] = _label(lang)
-                        e["expected"] = _msg_text(lang, t, code)
-                        rows.append(e)
+                # 先頭言語＝正文行、2 言語目以降＝多言語対応チェック行（"pair": false なら正文行だけ）
+                for i, lg in enumerate(LANGS if c.get("pair", True) else LANGS[:1]):
+                    text = loc.msg(code, lg, c.get("param") if i == 0 else c.get(f"param_{lg}", c.get("param")))
+                    if text is None:
+                        warnings.append(f"[check] {code} の {lg} 文言が locale に無い" +
+                                        ("（expected を手書きするか locale を確認）" if i == 0 else ""))
+                        text = "（文言要確認）" if i == 0 else "(message TBD)"
+                    r = dict(c)
+                    if i == 0:
+                        r["branch2"] = c.get("branch2") or _label(lg)
+                    else:
+                        r["viewpoint"] = "多言語対応チェック"
+                        r["branch2"] = _label(lg)
+                    r["expected"] = _err_msg(lg, text, code)
+                    rows.append(r)
             else:
                 rows.append(c)
         out.append({"section": g.get("section"), "ref": g.get("ref"), "cases": rows})
@@ -196,7 +177,7 @@ def disp_width(s: str) -> int:
 
 
 def lint(data: dict, layout, operation, check, design_ids: Optional[Dict[str, str]], lang: str,
-         loc: Optional["Locale"] = None, withdrawn: Optional[Dict[str, str]] = None) -> List[str]:
+         loc: Optional["Locale"] = None) -> List[str]:
     w: List[str] = []
     seen = set()
 
@@ -205,7 +186,6 @@ def lint(data: dict, layout, operation, check, design_ids: Optional[Dict[str, st
             v = str(c.get(f, "") or "")
             if FUNC_RE.search(v):
                 w.append(f"{where}: 「{f}」に関数名/ファイルパスらしき記述 → 業務語で書く（{v[:40]}）")
-            # [CMPF] 正文语言：meta.lang=ja 时检查简体中文混入（label 是画面原文，不查）
             if lang == "ja" and f not in ("label",) and any(ch in ZH_ONLY for ch in v):
                 w.append(f"{where}: 「{f}」に簡体字中国語らしき文字（{v[:30]}）")
 
@@ -276,7 +256,7 @@ def lint(data: dict, layout, operation, check, design_ids: Optional[Dict[str, st
                      for _, c, g in allcases)
     check_blob = "\n".join(json.dumps(c, ensure_ascii=False) for kind, c, _g in allcases if kind == "C")
     vps = {c.get("viewpoint") for _, c, _ in allcases}
-    for must in ("画面レイアウト", "分岐網羅") + (("多言語対応チェック",) if len(LANGS) > 1 else ()):
+    for must in ("画面レイアウト", "分岐網羅", "多言語対応チェック"):
         if must not in vps and layout:
             w.append(f"[coverage] 観点「{must}」の Case が0件")
     if not any(c.get("viewpoint") == "初期化チェック" for _, c, _ in allcases):
@@ -297,54 +277,21 @@ def lint(data: dict, layout, operation, check, design_ids: Optional[Dict[str, st
         if stale:
             w.append(f"[design] 設計書のエラーコードが現行 locale に無い {len(stale)}件（設計書が古い可能性 → 要確認事項に記載）: " + "、".join(stale))
         # ja/en pair for every message code used in check sheet
-    # トレース: 各 Case に BR/AC（未確定なら Q）が付いているか（unit-test-case-docs.mdc「写法」）
-    no_trace, bad_verify, no_verify, used_withdrawn = [], [], 0, set()
-    for kind, c, g in allcases:
-        refs = f"{c.get('ref') or ''} {g.get('ref') or ''} {g.get('section') or ''}"
-        if not TRACE_RE.search(refs):
-            no_trace.append(str(c.get("name") or c.get("item") or c.get("field") or "?"))
-        for i in ANY_ID_RE.findall(refs):
-            # 「BR-nn 欠番」のように欠番であること自体を確認する Case は対象外
-            if withdrawn and i in withdrawn and not re.search(rf"{re.escape(i)}\s*[（(【]?\s*(?:欠番|撤回|廃止)", refs):
-                used_withdrawn.add(i)
-        v = c.get("verify")
-        if v in (None, ""):
-            no_verify += 1
-        elif v not in VERIFY_VALUES:
-            bad_verify.append(str(v))
-    if no_trace:
-        w.append(f"[trace] BR/AC/Q の付いていない Case {len(no_trace)}件（例: {'、'.join(no_trace[:5])}）")
-    if used_withdrawn:
-        w.append(f"[trace] 欠番（撤回済み）の ID を参照している: {sorted(used_withdrawn)} → 欠番は再利用しない")
-    if bad_verify:
-        w.append(f"[verify] verify は {sorted(VERIFY_VALUES)} のいずれか: {sorted(set(bad_verify))}")
-    if no_verify:
-        w.append(f"[verify] JUnit で覆うか結合（联调）でしか確認できないかが未指定の Case {no_verify}件（verify 欄）")
-    # 多言語: 先頭言語のエラーコード Case ごとに、残りの各言語の 多言語対応チェック Case が要る（i18n.languages）。
-    # 多言語行の言語は 分岐2 の言語名（unit_test.language_labels）で判定。2 言語構成なら多言語行はすべて 2 番目の言語。
-    multi = [c for _, c, _ in allcases if c.get("viewpoint") == "多言語対応チェック"]
-    codes_first = set(CODE_RE.findall("\n".join(str(c.get("expected", "")) for _, c, _ in allcases if c.get("viewpoint") != "多言語対応チェック")))
-    others = LANGS[1:]
-    for lang in others:
-        rows = multi if len(others) == 1 else [c for c in multi if str(c.get("branch2") or "").strip() == _label(lang)]
-        codes_l = set(CODE_RE.findall("\n".join(str(c.get("expected", "")) for c in rows)))
-        if codes_first - codes_l:
-            w.append(f"[coverage] {_label(lang)}（多言語対応チェック）Case が無いエラーコード: {sorted(codes_first - codes_l)}")
+    codes_ja = set(CODE_RE.findall("\n".join(str(c.get("expected", "")) for _, c, _ in allcases if c.get("viewpoint") != "多言語対応チェック")))
+    codes_en = set(CODE_RE.findall("\n".join(str(c.get("expected", "")) for _, c, _ in allcases if c.get("viewpoint") == "多言語対応チェック")))
+    if len(LANGS) > 1 and codes_ja - codes_en:
+        w.append(f"[coverage] {'・'.join(_label(l) for l in LANGS[1:])}（多言語対応チェック）Case が無いエラーコード: {sorted(codes_ja - codes_en)}")
     return w
 
 
 # ---------------------------------------------------------------- design inventory
-def design_inventory(srcs: Optional[List[str]]):
-    """設計書（中間 JSON / API設計書・画面設計書 xlsx / docs/{機能}/ の MD）から ID 一覧と欠番を得る"""
-    if not srcs:
-        return {}, {}, []
+def design_inventory(src: Optional[str]) -> Dict[str, str]:
+    """design.json（cmpf-design-doc-xlsx 形式）/ docs/{機能}/ 目录 / 設計書.xlsx から ID 一覧を作る"""
+    if not src:
+        return {}
     sys.path.insert(0, str(HERE))
-    from read_design import load, configure  # noqa
-    configure(CFG)
-    inv = load(list(srcs))
-    print(f"design: mode={inv.mode}（json=中間 JSON / xlsx+md=設計書 xlsx と MD）読込 {len(inv.sources)} 件、"
-          f"Case 必須 ID {len(inv.as_dict())} 件、欠番 {len(inv.withdrawn)} 件")
-    return inv.as_dict(), dict(inv.withdrawn), [f"[design] {x}" for x in inv.warnings]
+    from read_design import inventory  # noqa
+    return inventory(src)
 
 
 # ---------------------------------------------------------------- OOXML helpers
@@ -488,7 +435,6 @@ def upsert(sheet_xml: str, r: int, col: str, cxml: str) -> str:
 
 
 # ---------------------------------------------------------------- build sheets
-# [CMPF] 模板：画面レイアウト判定 表头 2 行、Case 从第 3 行起、A〜AA 列；凡例在模板第 34〜57 行（表示タイプ一覧 46〜57 行），按 CMPF 模板写死
 def build_layout(xml: str, groups, sst: SST, trace: bool) -> Tuple[str, int, int, int]:
     widths = col_widths(xml)
     rows = header_rows(xml, 2)
@@ -533,7 +479,6 @@ def build_layout(xml: str, groups, sst: SST, trace: bool) -> Tuple[str, int, int
     return xml, count, first, last
 
 
-# [CMPF] 模板：画面操作処理判定 表头 1 行、A〜L 列（番号/試験観点/試験項目/処理ステップ/分岐/分岐明細１/分岐明細２/予想結果/判定履歴/担当者/最新結果/BUG票ID），最新結果=K 列
 def build_operation(xml: str, groups, sst: SST, trace: bool) -> Tuple[str, int, int, int]:
     widths = col_widths(xml)
     rows = header_rows(xml, 1)
@@ -571,7 +516,6 @@ def build_operation(xml: str, groups, sst: SST, trace: bool) -> Tuple[str, int, 
     return xml, count, first, last
 
 
-# [CMPF] 模板：項目チェック判定 表头 1 行、A〜K 列（B 試験観点/C 項目名/D 画面/E 分岐1/F 分岐2/G 予想結果/J 最新結果）
 def build_check(xml: str, groups, sst: SST, trace: bool) -> Tuple[str, int, int, int]:
     widths = col_widths(xml)
     rows = header_rows(xml, 1)
@@ -607,7 +551,6 @@ def build_check(xml: str, groups, sst: SST, trace: bool) -> Tuple[str, int, int,
     return xml, count, first, last
 
 
-# [CMPF] 模板：項目総計 B1/D1/B2/D2=作成者・作成日・更新者・更新日，第 5〜7 行对应三个 Case sheet（最新結果列 Z/K/J），第 8 行合计
 def patch_summary(xml: str, sst: SST, meta: dict, lr, orr, cr) -> str:
     for (r, col), v in {(1, "B"): meta.get("author", "AI"), (1, "D"): meta.get("created", ""),
                         (2, "B"): meta.get("updater", ""), (2, "D"): meta.get("updated", "")}.items():
@@ -626,7 +569,6 @@ def patch_summary(xml: str, sst: SST, meta: dict, lr, orr, cr) -> str:
     return xml
 
 
-# [CMPF] 模板：命名范围 _FilterDatabase / Print_Area 的 localSheetId 和列范围（$A$2:$AA / $A$1:$L / $A$1:$K）按 CMPF 模板写死
 def patch_workbook(xml: str, lay_end: int, op_last: int, chk_last: int, trace: bool) -> str:
     opc = "M" if trace else "L"
     chc = "L" if trace else "K"
@@ -673,73 +615,51 @@ def write_xlsx(template: Path, out: Path, meta, layout, operation, check, trace=
     with zipfile.ZipFile(template) as zt, zipfile.ZipFile(out) as zo:
         for f in FIXED_FILES:
             assert zt.read(f) == zo.read(f), f"{f} が変更された（試験観点 / DB書き込み判定 は固定）"
-    return ({"layout": ln, "operation": on, "check": cn},
-            {"layout": (lf, ll), "operation": (of, ol), "check": (cf, cl)})
+    return {"layout": ln, "operation": on, "check": cn}
 
 
-def _range_rows(formula: str) -> Optional[Tuple[int, int]]:
-    m = re.search(r"\$[A-Z]+\$(\d+):\$[A-Z]+\$(\d+)", formula or "")
-    return (int(m.group(1)), int(m.group(2))) if m else None
-
-
-def _sqref_covers(sqrefs: List[str], col: str, first: int, last: int) -> bool:
-    for sq in sqrefs:
-        for part in sq.split():
-            m = re.fullmatch(rf"{col}(\d+)(?::{col}(\d+))?", part)  # 1 行だけだと "K3" になる
-            if m and int(m.group(1)) <= first and int(m.group(2) or m.group(1)) >= last:
-                return True
-    return False
-
-
-def verify(out: Path, counts: Optional[Dict[str, int]] = None, spans: Optional[Dict[str, Tuple[int, int]]] = None) -> List[str]:
-    """openpyxl で読み直して構造と CASE 数を確認（保存はしない）"""
+def verify(out: Path) -> List[str]:
+    """openpyxl で再読込して構造を確認"""
     import warnings
     import openpyxl
     warnings.simplefilter("ignore")
     errs = []
     wb = openpyxl.load_workbook(out)
     names = [ws.title for ws in wb.worksheets]
-    # [CMPF] 模板：自检用的 sheet 名・顺序・隐藏 sheet・画面操作処理判定 表头文字・項目総計 行号 按 CMPF 模板写死
     exp = ["試験観点", "項目総計", "画面レイアウト判定", "画面操作処理判定", "項目チェック判定", "DB書き込み判定"]
     if names != exp:
         errs.append(f"sheet 構成が違う: {names}")
-        return errs
     if wb["DB書き込み判定"].sheet_state != "hidden":
         errs.append("DB書き込み判定 が hidden でない")
     hdr = [wb["画面操作処理判定"].cell(1, i).value for i in range(1, 13)]
     if hdr != ["番号", "試験観点", "試験項目", "処理ステップ", "分岐", "分岐明細１", "分岐明細２", "予想結果", "判定履歴", "担当者", "最新結果", "BUG票ID"]:
         errs.append(f"画面操作処理判定 ヘッダー異常: {hdr}")
-    if counts is None:
-        return errs
-    # 項目総計 の COUNTIF 範囲と実際の Case 行を照合
-    summ = wb["項目総計"]
-    spec = {5: ("layout", "画面レイアウト判定", "Z"), 6: ("operation", "画面操作処理判定", "K"), 7: ("check", "項目チェック判定", "J")}
-    for r, (key, sh, rc) in spec.items():
-        ws = wb[sh]
-        rng = _range_rows(str(summ[f"C{r}"].value))
-        # Case 行＝B 列が 試験観点 の16項目のどれかである行（凡例・ヘッダーは除外される）
-        actual = sum(1 for i in range(1, ws.max_row + 1) if ws.cell(i, 2).value in VIEWPOINTS)
-        if rng is None:
-            errs.append(f"項目総計!C{r} の COUNTIF 範囲が読めない: {summ[f'C{r}'].value}")
-            continue
-        in_rng = sum(1 for i in range(rng[0], rng[1] + 1) if ws.cell(i, 2).value not in (None, ""))
-        if counts[key] and in_rng != counts[key]:
-            errs.append(f"{sh}: 項目総計の範囲 {rng} 内の Case {in_rng} 件 ≠ 生成 {counts[key]} 件")
-        if counts[key] and actual != counts[key]:
-            errs.append(f"{sh}: シート上の Case 行 {actual} 件 ≠ 生成 {counts[key]} 件（範囲外に Case 行がある）")
-        if spans and counts[key]:
-            f, l = spans[key]
-            if rng != (f, l):
-                errs.append(f"{sh}: 項目総計の範囲 {rng} ≠ Case 行 {f}-{l}")
-            sq = [str(dv.sqref) for dv in ws.data_validations.dataValidation]
-            if not _sqref_covers(sq, rc, f, l):
-                errs.append(f"{sh}: 最新結果（{rc}列）の下拉が Case 行 {f}-{l} を覆っていない")
     return errs
 
 
+def configure(cfg: dict) -> None:
+    """項目配置を反映する（init_project.py の自検からも呼ぶ）"""
+    global CODE_RE
+    CFG.clear()
+    CFG.update(cfg)
+    LANGS[:] = list(cfg["i18n"]["languages"])
+    CODE_RE = re.compile(rf"(?:{cfg['ids']['error_code']})")
+    import read_design
+    read_design.configure(cfg)
+
+
 def _resolve_template(arg: Optional[str]) -> Path:
+    """--template ＞ unit_test.template（絶対パス、またはカレント→規則リポジトリのルートの順に相対解決。
+    指定したのに見つからなければエラー）＞ このツールの templates/ ＞ docs/ai-native/"""
     if arg:
         return Path(arg)
+    t = str(CFG.get("unit_test", {}).get("template") or "").strip()
+    if t:
+        p = Path(t).expanduser()
+        for c in ([p] if p.is_absolute() else [p, HERE.parents[2] / p]):
+            if c.exists():
+                return c
+        sys.exit(f"ERROR: unit_test.template のテンプレートが見つからない: {t}（init.sh で直すか --template で指定）")
     for c in TEMPLATE_CANDIDATES:
         if c.exists():
             return c
@@ -747,63 +667,44 @@ def _resolve_template(arg: Optional[str]) -> Path:
 
 
 def _resolve_locale(arg: Optional[str]) -> Optional[Path]:
-    """--locale-dir ＞ 項目配置 i18n.locale_dir（カレント＝プロジェクトのルートからの相対）。見つからなければ None"""
+    """--locale-dir ＞ i18n.locale_dir（カレント＝プロジェクトのルートからの相対）。無ければ None（文言は要確認になる）"""
     if arg:
         return Path(arg)
     d = Path(CFG["i18n"]["locale_dir"])
-    return d if d.exists() else None
-
-
-def configure(cfg: dict) -> None:
-    global CODE_RE, TRACE_RE
-    CFG.clear()
-    CFG.update(cfg)
-    LANGS[:] = list(cfg["i18n"]["languages"])
-    CODE_RE = re.compile(rf"(?<![\w-])(?:{cfg['ids']['error_code']})(?![\w-])")
-    TRACE_RE = re.compile(cfg["unit_test"]["trace_id_regex"])
+    return d if d.is_dir() else None
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cases", nargs="?", help="cases.json")
-    ap.add_argument("-o", "--out", help="出力 xlsx（既定: ./単体テスト項目_{meta.feature}.xlsx）")
-    ap.add_argument("--design", nargs="+", metavar="SRC",
-                    help="設計書（docs/{機能}/、API設計書_*.xlsx、画面設計書_*.xlsx、中間 JSON。複数可）→ ID カバレッジ確認")
-    ap.add_argument("--config", help="項目配置 project.json（init.sh で生成。必須。--schema 以外）")
-    ap.add_argument("--locale-dir", help="メッセージ定義のディレクトリ（省略時は項目配置の i18n.locale_dir）")
-    ap.add_argument("--template", help=f"テンプレート xlsx（省略時 {TEMPLATE_CANDIDATES[0].parent.name}/ → docs/ai-native/）")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("cases", nargs="?")
+    ap.add_argument("-o", "--out")
+    ap.add_argument("--design", help="design.json / docs/{機能}/ / 設計書.xlsx（カバレッジ確認用）")
+    ap.add_argument("--config", help="init.sh で生成した project.json（必須）")
+    ap.add_argument("--locale-dir", help="locale ディレクトリ（省略時 i18n.locale_dir）")
+    ap.add_argument("--template", help="テンプレート xlsx（省略時 unit_test.template → templates/ → docs/ai-native/）")
     ap.add_argument("--trace-col", action="store_true", help="操作/チェック sheet 右端に『設計書参照』列を追加（テンプレ外拡張・既定 OFF）")
     ap.add_argument("--strict", action="store_true", help="lint 警告があれば exit 1")
-    ap.add_argument("--lint-only", action="store_true", help="xlsx を作らず lint だけ")
-    ap.add_argument("--schema", action="store_true", help="cases.json の骨架を表示")
+    ap.add_argument("--lint-only", action="store_true")
+    ap.add_argument("--schema", action="store_true")
     ap.add_argument("--trace-report", help="ref → Case 対応表を Markdown で出力")
     a = ap.parse_args()
     if a.schema:
         print(json.dumps(SCHEMA, ensure_ascii=False, indent=2))
         return
-    sys.path.insert(0, str(HERE.parents[1]))
-    import project_config  # tools/project_config.py
     configure(project_config.load(a.config, "unit_test"))
-    if not a.cases:
-        ap.error("cases.json を指定してください")
     data = json.loads(Path(a.cases).read_text(encoding="utf-8"))
     meta = data.get("meta", {})
-    loc_dir = _resolve_locale(a.locale_dir)
-    loc = Locale(loc_dir)
+    loc = Locale(_resolve_locale(a.locale_dir))
     warns: List[str] = []
-    if loc_dir is None and any(c.get("code") for g in data.get("check", []) for c in g.get("cases", [])):
-        warns.append(f"[locale] locale（{CFG['i18n']['locale_dir']}）が見つからない → code 行の文言が引けない（--locale-dir を指定）")
     layout = data.get("layout", [])
     operation = data.get("operation", [])
     check = expand_check_cases(data.get("check", []), loc, warns)
-    ids, withdrawn, dwarn = design_inventory(a.design)
-    warns += dwarn
-    warns += lint(data, layout, operation, check, ids, meta.get("lang", "ja"), loc, withdrawn)
+    warns += lint(data, layout, operation, check, design_inventory(a.design), meta.get("lang", LANGS[0]), loc)
+    counts = None
     if not a.lint_only:
-        template = _resolve_template(a.template)
-        out = Path(a.out or f"単体テスト項目_{meta.get('feature') or '機能'}.xlsx")
-        counts, spans = write_xlsx(template, out, meta, layout, operation, check, a.trace_col)
-        errs = verify(out, counts, spans)
+        out = Path(a.out or f"単体テスト項目_{meta.get('feature','機能')}.xlsx")
+        counts = write_xlsx(_resolve_template(a.template), out, meta, layout, operation, check, a.trace_col)
+        errs = verify(out)
         print(f"Generated: {out}")
         print(f"  画面レイアウト判定: {counts['layout']}  画面操作処理判定: {counts['operation']}  項目チェック判定: {counts['check']}"
               f"  合計: {sum(counts.values())}")
@@ -811,14 +712,12 @@ def main():
             print("ERROR:", e)
         if errs:
             sys.exit(2)
-        print("  自検 OK: sheet 構成 / 隠し状態 / 項目総計の範囲・CASE 数 / 下拉範囲")
     if a.trace_report:
-        lines = ["| ref | sheet | Case | verify |", "|---|---|---|---|"]
+        lines = ["| ref | sheet | Case |", "|---|---|---|"]
         for nm, groups, key in (("画面レイアウト判定", layout, "name"), ("画面操作処理判定", operation, "item"), ("項目チェック判定", check, "field")):
             for g in groups:
                 for c in g["cases"]:
-                    lines.append(f"| {c.get('ref') or g.get('ref') or ''} | {nm} | {c.get(key,'')} / "
-                                 f"{c.get('branch1') or c.get('step') or c.get('label') or ''} | {c.get('verify') or ''} |")
+                    lines.append(f"| {c.get('ref') or g.get('ref') or ''} | {nm} | {c.get(key,'')} / {c.get('branch1') or c.get('step') or c.get('label') or ''} |")
         Path(a.trace_report).write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"lint: {len(warns)} 件")
     for x in warns:

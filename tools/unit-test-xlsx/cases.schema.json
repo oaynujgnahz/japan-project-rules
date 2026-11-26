@@ -28,7 +28,7 @@
     "タイムアウト処理", "多言語対応チェック", "非同期処理チェック", "セッション・認証処理"],
     "description": "B 列 試験観点。試験観点 sheet の 16 語のみ"},
   "ref": {"type": "string", "description": "トレース用 ID。BR/AC を必ず、設計未定なら Q も。例 \"BR-xx / AC-xx\"。欠番 ID は使わない"},
-  "verify": {"enum": ["JUnit", "結合", "手動"], "description": "JUnit で覆うか、結合（联调）でしか確認できないか。xlsx には出ず trace-report に出る"},
+  "verify": {"enum": ["JUnit", "結合", "手動"], "description": "（任意・備忘）JUnit で覆うか、結合でしか確認できないか、手動か。gen_ut_xlsx.py は読まない・xlsx に出さない"},
   "group_common": {
    "type": "object",
    "required": ["cases"],

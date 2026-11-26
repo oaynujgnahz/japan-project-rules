@@ -1,11 +1,11 @@
 # 团队 Skills 安装指南
 
-Cursor Agent 在 `workflow.mdc` 中引用的 Skills **不在 CMPF 仓库内**，需每人安装一次（或团队统一分发）。
+Cursor Agent 在 `workflow.mdc` 中引用的 Skills **不在 {{system_name}} 仓库内**，需每人安装一次（或团队统一分发）。
 
 > 未安装的 Skill：**跳过并在回复 / RV 中注明**，按下文「C. 仓库内速查」执行，不视为 Blocker。
 > 规则仓库 `japan-project-rules` 的 `install.sh` 会把 `md-design-doc`、`cmpf-report-file-io` 安装到 `~/.cursor/skills/`；`verification-before-completion`、`review-bugbot`、`review-security` 不在规则仓库内（可选）。
 
-## 必装（CMPF 开发）
+## 必装（{{system_name}} 开发）
 
 | Skill | 用途 | 安装 |
 |-------|------|------|
@@ -58,4 +58,4 @@ Agent 仍受 `.cursor/rules/` 约束；以下为核心要点：
 
 ## 团队统一
 
-建议负责人维护 **内部共享盘 / git 子模块**，版本与 CMPF rules 同步更新；更新后在 `docs/ai-native/README.md` 注明版本日期。
+建议负责人维护 **内部共享盘 / git 子模块**，版本与 {{system_name}} rules 同步更新；更新后在 `docs/ai-native/README.md` 注明版本日期。

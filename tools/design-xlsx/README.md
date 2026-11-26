@@ -32,12 +32,12 @@ MD 写法因人而异（表格列、语言、契约放在 openapi.yaml 等），
 
 **Cursor 提示词（复制使用）：**
 
-<!-- [CMPF] 正文语言：xlsx 正文用日文、MD 原稿以中文为主，是本项目（对日）的约定；sheet 名和表头也是日文 -->
+<!-- [项目约定] 正文语言：xlsx 正文用日文、MD 原稿以中文为主，是本项目（对日）的约定；sheet 名和表头也是日文 -->
 > 读 `docs/{機能}/` 下的 `07_API設計書/*.md`、`06_画面設計書/*.md`（以及它们引用的 openapi.yaml），按 `tools/design-xlsx/README.md` 的「JSON 格式说明」写出 `docs/{機能}/design.json`，参考 `tools/design-xlsx/example/sample_design.json`。要求：1) 只转写 MD 里有的内容，不自己补规格，MD 不清楚的地方写成 `{"kind":"text","text":"【要確認】…"}` 并在回复里列出；2) 正文用日文；3) 每个画面、画面项目、事件、API、处理步骤、检查项都要有唯一 id（`SCR-xxx`、`SCR-xxx-I01`、`SCR-xxx-E01`、`API-xxx`、`API-xxx-S01`、`API-xxx-S01-C01`）和 `refs: {"br":[], "ac":[], "q":[]}`；4) 写完跑 `python3 tools/design-xlsx/export_api.py` 和 `export_scr.py`，有报错就改 JSON 直到通过。
 
 ## JSON 格式说明
 
-<!-- [CMPF] ID 写法：SCR-/API- 及 -I/-E/-S/-C/-B 后缀是本项目约定，脚本只查唯一性、不查格式；将来 ID 规则只在 project.json 定义一份，设计书和单体case 两个工具共读 -->
+<!-- [项目约定] ID 写法：SCR-/API- 及 -I/-E/-S/-C/-B 后缀是本项目约定，脚本只查唯一性、不查格式；将来 ID 规则只在 project.json 定义一份，设计书和单体case 两个工具共读 -->
 **追踪用的固定字段**（画面、画面项目、事件、API、处理步骤、检查项都必须有；单体 case 按这些对接）：
 
 | 字段 | 说明 |
@@ -73,6 +73,6 @@ MD 写法因人而异（表格列、语言、契约放在 openapi.yaml 等），
 
 ## 文件
 
-<!-- [CMPF] 版式：templates/*.xlsx 是按 CMPF 样本做的；模板本身不加标注 -->
+<!-- [项目约定] 版式：templates/*.xlsx 是按示例项目样本做的；模板本身不加标注 -->
 `export_api.py` / `export_scr.py` 渲染器；`tpl.py` 共通（套模板行样式、合并、JSON 检查）；`templates/` 空模板（只有表头和版式）；`example/` 虚构示例。
 模板的正文行是渲染时复制样式用的原型行（行号写在 export_api.py 开头的常量和 export_scr.py 里），改模板时不要增删这些行。

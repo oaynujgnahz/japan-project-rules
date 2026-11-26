@@ -8,7 +8,7 @@ info:
 
 servers:
   - url: /api
-    description: CMPF carbonapi（经网关前缀按环境调整）
+    description: {{system_name}} carbonapi（经网关前缀按环境调整）
 
 tags:
   - name: example

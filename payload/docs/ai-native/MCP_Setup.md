@@ -1,4 +1,4 @@
-# MCP 接入指南（CMPF）
+# MCP 接入指南（{{system_name}}）
 
 团队本地启用 MCP；**勿将含密码的 `mcp.json` 提交 Git**。
 

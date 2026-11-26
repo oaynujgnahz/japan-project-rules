@@ -22,7 +22,8 @@ bot（没有交互终端）用 `./init.sh <项目> <名> --emit-questions` 拿�
 
 `install.sh` 会做这 4 件事（项目相关的值都取自 `--config`）：
 
-1. 把规则复制进 CMPF-SRC（`AGENTS.md`、`.cursor/`、`docs/ai-native/`、`docs/単体テスト項目テンプレート/`、`e2e/`、`mvn8`、PR 模板、`tools/design-xlsx/`、`tools/unit-test-xlsx/`）。已有文件如果内容不同，先备份到 `.rules-backup/<时间>/` 再覆盖。
+1. 把规则复制进 CMPF-SRC（`AGENTS.md`、`.cursor/`、`docs/ai-native/`、`docs/単体テスト項目テンプレート/`、`e2e/`、Java 8 用 Maven 包装脚本（CMPF 为 `mvn8`）、PR 模板、`tools/design-xlsx/`、`tools/unit-test-xlsx/`）。已有文件如果内容不同，先备份到 `.rules-backup/<时间>/` 再覆盖。
+   `payload/` 里的 `{{system_name}}`、`{{repo_name}}`、`{{base_package}}`、`{{build_cmd}}`、`{{build_wrapper}}`、`{{error_code_prefix}}`、`{{error_code}}` 在复制时换成配置里的值（对应键见 `tools/project_config.py` 的 `PAYLOAD_PLACEHOLDERS`，由 init 询问）；缺键就报错退出，不会回落成 CMPF 的值。`payload.build_wrapper` 为空时不装包装脚本。
 2. 把这些文件写进 `.git/info/exclude`：只在你本地生效，`git status` 里看不到，也不用改 `.gitignore`。
 3. 把 `skills/` 下的 skill 装到 `~/.cursor/skills/`。
 4. 按配置的 `env_checks` 检查环境（CMPF 是 Java 8 + Maven、node），再查 python3 / openpyxl，缺什么会直接提示。

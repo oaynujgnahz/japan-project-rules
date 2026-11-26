@@ -11,11 +11,16 @@
 
   python3 project_config.py <project.json> get <dotted.key>     # 取一个值（list/dict 输出 JSON，list 可加 --lines）
   python3 project_config.py <project.json> check [--need k ...]  # 只做检查
+  python3 project_config.py <project.json> render-payload <src_dir> <out_dir>
+      # install.sh 用：把 payload/ 里的 {{占位符}}（文件内容和路径名）换成配置的值，写到 out_dir。
+      # 占位符 → 配置键见 PAYLOAD_PLACEHOLDERS；缺键报错退出，不回落任何项目的值。路径名渲染成空的文件不装。
 """
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
 import sys
 from pathlib import Path
 from typing import Any, Iterable, List, Optional
@@ -29,9 +34,22 @@ NEEDS = {
     "design": COMMON_KEYS + ["design.system_name", "design.doc_no_format", "design.author?", "ids.screen_id", "ids.api_id"],
     "read_design": COMMON_KEYS + ["ids.screen_id", "ids.api_id"],
     "unit_test": COMMON_KEYS + ["ids.screen_id", "ids.api_id", "unit_test.locale_files.{lang}",
-                                "unit_test.error_message_templates.{lang}", "unit_test.language_labels.{lang}", "unit_test.trace_id_regex"],
+                                "unit_test.error_message_templates.{lang}", "unit_test.language_labels.{lang}"],
     "install": ["name", "detect.file", "detect.contains?", "local_only", "executable?", "env_checks?"],
 }
+
+# payload/ の {{占位符}} → 配置键（末尾 ? は空でも可）。install.sh が render-payload で置換する
+PAYLOAD_PLACEHOLDERS = {
+    "system_name": "design.system_name",              # 规则文档里的项目/系统名
+    "repo_name": "payload.repo_name",                 # 项目仓库目录名
+    "base_package": "payload.base_package?",          # Java 包根（非 Java 项目可空）
+    "build_cmd": "payload.build_cmd",                 # 后端构建/测试命令（如 ./mvnw、mvn、./gradlew）
+    "build_wrapper": "payload.build_wrapper?",        # payload/{{build_wrapper}}（Java 8 用 Maven 包装脚本）装成的文件名；空=不装
+    "error_code_prefix": "payload.error_code_prefix",  # 错误码前缀（文档里的例子 XXXX0073-E）
+    "error_code": "ids.error_code",                   # 错误码正则
+}
+NEEDS["install"] += list(dict.fromkeys(PAYLOAD_PLACEHOLDERS.values()))
+PH_TOKEN_RE = re.compile(r"\{\{([a-z_]+)\}\}")
 
 
 class ConfigError(SystemExit):
@@ -132,7 +150,62 @@ def error_code_re(cfg: dict, anchored: bool = True) -> "re.Pattern":
     return re.compile(rf"(?<![\w-])(?:{body})(?![\w-])" if anchored else rf"(?:{body})")
 
 
+def payload_values(cfg: dict) -> dict:
+    vals = {}
+    for name, key in PAYLOAD_PLACEHOLDERS.items():
+        k = key.rstrip("?")
+        v = get(cfg, k)  # 缺键 → 报错退出
+        if not isinstance(v, str):
+            die(f"{k} 必须是字符串（payload 占位符 {{{{{name}}}}} 用）")
+        if not key.endswith("?") and not v:
+            die(f"{k} 为空（payload 占位符 {{{{{name}}}}} 用）")
+        vals[name] = v
+    return vals
+
+
+def _render(text: str, vals: dict, where: str) -> str:
+    unknown = sorted({m.group(1) for m in PH_TOKEN_RE.finditer(text) if m.group(1) not in vals})
+    if unknown:
+        die(f"{where}: 未定义的 payload 占位符 {unknown}（在 PAYLOAD_PLACEHOLDERS 里登记）")
+    return PH_TOKEN_RE.sub(lambda m: vals[m.group(1)], text)
+
+
+def render_payload(cfg: dict, src: Path, dst: Path) -> int:
+    """src 下的文件渲染到 dst。文本文件只替换 {{name}}；二进制和没有占位符的文件原样复制（含权限位）。"""
+    vals = payload_values(cfg)
+    n = 0
+    for root, dirs, files in os.walk(src):
+        dirs[:] = sorted(d for d in dirs if d != "__pycache__")
+        for f in sorted(files):
+            if f == ".DS_Store" or f.endswith(".pyc"):
+                continue
+            sp = Path(root) / f
+            rel = sp.relative_to(src)
+            parts = [_render(x, vals, str(rel)) for x in rel.parts]
+            if any(not x for x in parts):
+                continue  # 路径渲染成空（如 build_wrapper=""）→ 不装
+            dp = dst.joinpath(*parts)
+            dp.parent.mkdir(parents=True, exist_ok=True)
+            data = sp.read_bytes()
+            try:
+                text = data.decode("utf-8")
+            except UnicodeDecodeError:
+                text = None
+            if text is not None and PH_TOKEN_RE.search(text):
+                dp.write_bytes(_render(text, vals, str(rel)).encode("utf-8"))
+                shutil.copymode(sp, dp)
+            else:
+                shutil.copy2(sp, dp)
+            n += 1
+    return n
+
+
 def _main(argv: List[str]) -> int:
+    if len(argv) >= 4 and argv[1] == "render-payload":
+        cfg = load(argv[0], "install")
+        n = render_payload(cfg, Path(argv[2]), Path(argv[3]))
+        print(n)
+        return 0
     if len(argv) < 2 or argv[1] not in ("get", "check"):
         print(__doc__)
         return 2

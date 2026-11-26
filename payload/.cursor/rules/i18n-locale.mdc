@@ -1,10 +1,10 @@
 ---
-description: CMPF 多语言翻译规范（ja / en）
+description: {{system_name}} 多语言翻译规范（ja / en）
 globs: "frontend/src/locale/**"
 alwaysApply: false
 ---
 
-<!-- [CMPF] 整份为 CMPF 多语言要求：只维护 ja/en、zh 不维护、frontend/src/locale 路径、用語辞書_日英.md；将来由项目配置的语言列表和路径替换 -->
+<!-- [{{system_name}}] 整份为 {{system_name}} 多语言要求：只维护 ja/en、zh 不维护、frontend/src/locale 路径、用語辞書_日英.md；将来由项目配置的语言列表和路径替换 -->
 # i18n / Locale
 
 ## 必须遵守

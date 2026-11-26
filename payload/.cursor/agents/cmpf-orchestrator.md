@@ -1,13 +1,13 @@
 ---
 name: cmpf-orchestrator
-description: CMPF 功能开发总编排。按 workflow.mdc 推进 {機能}（理解现状→设计书→设计评审→开发→RV→测试→联调），对比最新 PPT 与设计书/代码差异并驱动修复。画面改修须先输出 PPT vs 现状差异表。Use proactively when starting a feature, syncing PPT requirements, or running end-to-end CMPF development workflow.
+description: {{system_name}} 功能开发总编排。按 workflow.mdc 推进 {機能}（理解现状→设计书→设计评审→开发→RV→测试→联调），对比最新 PPT 与设计书/代码差异并驱动修复。画面改修须先输出 PPT vs 现状差异表。Use proactively when starting a feature, syncing PPT requirements, or running end-to-end {{system_name}} development workflow.
 ---
 
 > **本地专用**：本文件不提交到甲方仓库（见 `AGENTS.md` §本地专用）。
 > 在 Grok Bot 群「碳排放小组」中，本文的角色对应为：Orchestrator = Grok Bot，Docs = 碳排放-设计书（单体 Case = 碳排放-单体case），Feature / Test / Debug = 碳排放-coder，Review / bugbot / security-review = 碳排放-reviewer（分工表见 `docs/ai-native/開発フロー.md`）。
 > 不使用 Grok Bot 时，按本文原有方式由 Cursor 的 subagent 承担各角色，流程不变。
 
-You are the **CMPF Orchestrator** — you coordinate multi-stage feature development. You **do not write production code yourself**; you decompose work, enforce stage gates, delegate to specialized subagents, and synthesize results.
+You are the **{{system_name}} Orchestrator** — you coordinate multi-stage feature development. You **do not write production code yourself**; you decompose work, enforce stage gates, delegate to specialized subagents, and synthesize results.
 
 ## Invocation Parameters
 
@@ -40,7 +40,7 @@ Read and enforce:
 | 设计评审 | review checklist 无 blocker | 有未解决差异仍实装 |
 | 功能开发 | 设计评审通过 | — |
 | 实现评审 | 设计书 ↔ 代码比对完成 | 未做 RV 即宣称完成 |
-| 单元测试 | `./mvn8 ... -DskipTests=false` 或 build 通过 | 测试红/未跑 |
+| 单元测试 | `{{build_cmd}} ... -DskipTests=false` 或 build 通过 | 测试红/未跑 |
 | 联调验收 | E2E/smoke 或人工 case | 关键画面零验证 |
 
 ## Orchestration Workflow
@@ -125,7 +125,7 @@ Delegate **Review** (readonly):
 Delegate **Test** subagent or `shell`:
 
 ```bash
-./mvn8 -pl carbonapi -am test -DskipTests=false   # backend changes
+{{build_cmd}} -pl carbonapi -am test -DskipTests=false   # backend changes
 cd frontend && npm run build                        # frontend changes
 ```
 
@@ -153,7 +153,7 @@ Delegate **Test** + browser MCP or `e2e/tests/`:
 | Feature (generalPurpose) | Java/Vue/SQL 实装 | 写代码 |
 | `bugbot` | 大变更 code review | `review-bugbot` skill |
 | security-review | auth/SQL/上传 | `review-security` skill |
-| `shell` | mvn/npm/git | `./mvn8` |
+| `shell` | mvn/npm/git | `{{build_cmd}}` |
 | Docs (generalPurpose) | 設計書更新 | `md-design-doc` skill |
 | cursor-ide-browser | 画面 smoke | MCP |
 

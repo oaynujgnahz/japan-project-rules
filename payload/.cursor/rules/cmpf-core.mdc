@@ -1,26 +1,26 @@
 ---
-description: CMPF 项目总览、命令、全局编码原则与任务收尾
+description: {{system_name}} 项目总览、命令、全局编码原则与任务收尾
 alwaysApply: true
 ---
 
-# CMPF Core
+# {{system_name}} Core
 
 > 流程：`workflow.mdc` · RV：`review.mdc` · 画面改修：`ppt-first-ui.mdc`（硬规则见下 §画面改修 Gate）  
 > 文档：`docs/ai-native/README.md` · `AGENTS.md`
 
-<!-- [CMPF] 本节整节为 CMPF 技术栈、Maven 模块和目录路径；将来由项目配置替换 -->
+<!-- [{{system_name}}] 本节整节为 {{system_name}} 技术栈、Maven 模块和目录路径；将来由项目配置替换 -->
 ## Project
 
-Java 8 / Spring Boot 2.5.14 + Vue 3 + TS + Vite。Maven：`carbon-parent`（`./mvn8`）。  
+Java 8 / Spring Boot 2.5.14 + Vue 3 + TS + Vite。Maven：`carbon-parent`（`{{build_cmd}}`）。  
 模块：`common` · `carbonapi` · `taskapi` · `userapi` · `message` · `frontend` · `report`。
 
-路径：Java `com.ntt.cmpf.*` · mapper/SQL `resources/mapper/` · 前端 `frontend/src/{apis,views,router,store,locale}` · 设计书 `docs/{機能}/`。
+路径：Java `{{base_package}}.*` · mapper/SQL `resources/mapper/` · 前端 `frontend/src/{apis,views,router,store,locale}` · 设计书 `docs/{機能}/`。
 
-<!-- [CMPF] 本节整节为 CMPF 构建命令（./mvn8、frontend npm、Node v16.14.0、naive-ui patch）；将来由项目配置的 BUILD_CMD 替换 -->
+<!-- [{{system_name}}] 本节整节为 {{system_name}} 构建命令（{{build_cmd}}、frontend npm、Node v16.14.0、naive-ui patch）；将来由项目配置的 BUILD_CMD 替换 -->
 ## Commands
 
 ```bash
-./mvn8 -pl <module> -am test -DskipTests=false   # 默认 skipTests=true
+{{build_cmd}} -pl <module> -am test -DskipTests=false   # 默认 skipTests=true
 cd frontend && npm run build
 ```
 
@@ -28,7 +28,7 @@ Node v16.14.0 · 保留 `frontend/patches/naive-ui+2.35.0.patch`。
 
 ## Coding（全局）
 
-<!-- [CMPF] Java 8 only 属 CMPF 技术栈；注释日/英、禁止中文注释为对日项目要求 -->
+<!-- [{{system_name}}] Java 8 only 属 {{system_name}} 技术栈；注释日/英、禁止中文注释为对日项目要求 -->
 - 先读既存，minimal diff；Java 8 only；不擅自升级依赖
 - 注释日/英，解释 **why**；禁止中文注释
 - 新类按业务域命名；勿滥用 `Ghg` 等宽泛前缀
@@ -36,23 +36,23 @@ Node v16.14.0 · 保留 `frontend/patches/naive-ui+2.35.0.patch`。
 
 ## 禁止
 
-<!-- [CMPF] manifests/prd、manifests/mieco-prd 为 CMPF 部署环境 -->
+<!-- [{{system_name}}] manifests/prd、manifests/mieco-prd 为 {{system_name}} 部署环境 -->
 - 改 `manifests/prd`、`manifests/mieco-prd`（除非明确要求）
 - 提交密钥/真实凭证；盲目重写；覆盖无关未提交改动；Java 9+ 语法
 
 ## Agent
 
 - 默认中文回复
-<!-- [CMPF] cmpf-report-file-io skill 为 CMPF 专属 -->
+<!-- [{{system_name}}] cmpf-report-file-io skill 为 {{system_name}} 专属 -->
 - 文件 I/O → `cmpf-report-file-io` skill（`install.sh` 安装到 `~/.cursor/skills/`；没有则读既存实现并注明，见 `docs/ai-native/skills/README.md`）
 - 設計書 → `md-design-doc`；新功能在「写设计书」阶段填 `验收标准_模板.md`
-<!-- [CMPF] 06_画面設計書 / 07_API設計書 目录结构属 CMPF 设计书模板 -->
+<!-- [{{system_name}}] 06_画面設計書 / 07_API設計書 目录结构属 {{system_name}} 设计书模板 -->
 - **开发时**：实装逻辑须同步写入对应 `06_画面設計書` / `07_API設計書` / `詳細設計書` / `验收标准`（`design-docs.mdc` §开发时设计留存）
-<!-- [CMPF] 用語辞書_日英.md、只同步 ja/en（zh 不维护）属 CMPF 多语言要求；将来由项目配置的语言列表替换 -->
+<!-- [{{system_name}}] 用語辞書_日英.md、只同步 ja/en（zh 不维护）属 {{system_name}} 多语言要求；将来由项目配置的语言列表替换 -->
 - locale → `用語辞書_日英.md`，**ja/en 同步**（`locale/zh` 不维护）
 - 验证通过后再宣称完成
 
-<!-- [CMPF] 画面改修 Gate 以 PPT 为准、06_画面設計書，属 CMPF 需求交付方式（PPT）；将来由项目配置决定是否启用 -->
+<!-- [{{system_name}}] 画面改修 Gate 以 PPT 为准、06_画面設計書，属 {{system_name}} 需求交付方式（PPT）；将来由项目配置决定是否启用 -->
 ### 画面改修 Gate（硬规则 · 唯一摘要）
 
 布局/控件/列变更时：

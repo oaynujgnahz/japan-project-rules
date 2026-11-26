@@ -129,7 +129,7 @@ def out_path(spec_path, doc, prefix, arg_out):
     return os.path.join(d, name)
 
 
-# [CMPF] 版式：表紙・変更履歴的单元格位置（A1/AW2/BD2/J5/J13、第 8 行起）按 CMPF 样本模板
+# [项目约定] 版式：表紙・変更履歴的单元格位置（A1/AW2/BD2/J5/J13、第 8 行起）按示例项目样本模板
 def write_history(ws, spec, doc_id, first_row=8, doc=None):
     """変更履歴シート：A1 文書ID、AW2 作成日、BD2 作成者、8 行目以降に改訂履歴。"""
     ws["A1"] = doc_id

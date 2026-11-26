@@ -1,10 +1,10 @@
 ---
-description: CMPF Vue 3 + TypeScript + Naive UI 前端规范
+description: {{system_name}} Vue 3 + TypeScript + Naive UI 前端规范
 globs: "frontend/**/*.{vue,ts,tsx}"
 alwaysApply: false
 ---
 
-<!-- [CMPF] 整份为 CMPF 前端技术栈（Vue 3 + Naive UI + vue-i18n + Pinia + ECharts）专属；将来移到技术栈配置 -->
+<!-- [{{system_name}}] 整份为 {{system_name}} 前端技术栈（Vue 3 + Naive UI + vue-i18n + Pinia + ECharts）专属；将来移到技术栈配置 -->
 # Frontend Rules
 
 ## 技术栈
@@ -20,7 +20,7 @@ alwaysApply: false
 0. **画面改修**（列/按钮/布局变更）：`ppt-first-ui.mdc`（硬规则见 `cmpf-core.mdc` §画面改修 Gate）
 1. 查 `frontend/src/components/` 与 `hook/LocalNaiveUI.ts` 是否已有通用组件
 2. 无则新规组件追加到 `components/` 后再引用（见 `docs/ai-native/UI規範.md`）
-<!-- [CMPF] ja/en 同步、locale/zh 不维护属 CMPF 多语言要求 -->
+<!-- [{{system_name}}] ja/en 同步、locale/zh 不维护属 {{system_name}} 多语言要求 -->
 3. 可见文案 `$t()` / `useI18n()`；**ja / en 同步**（`locale/zh` 不维护）
 
 ## 优先复用组件
@@ -38,13 +38,13 @@ alwaysApply: false
 
 - 列表：`n-card` + 检索 + `n-data-table`；操作列右固定
 - 按钮：取消左、确定/保存右；权限用 `Authority()` / `ACCESS_R_*`
-<!-- [CMPF] classic / new 双 UI 是 CMPF 特有的两套路由 -->
+<!-- [{{system_name}}] classic / new 双 UI 是 {{system_name}} 特有的两套路由 -->
 - classic / new 双 UI 均需确认（如适用）
 - 操作列 icon：优先 `@vicons/fluent` + `NButton` `circle` `size="small"`（与邻近画面一致）
 
 ## 依赖字段リセット（表形式画面の必須チェック）
 
-<!-- [CMPF] 示例字段为 CMPF 的 PCF Step2 画面；残值排查原则本身通用 -->
+<!-- [{{system_name}}] 示例字段为 {{system_name}} 的 PCF Step2 画面；残值排查原则本身通用 -->
 行データに「他の選択項目に依存する隠しフィールド」がある画面（例：PCF Step2 の `emissionCalcMethod` / `weight` / `milage` / `fuelConsumption`）では、残値が別のエラーコードとして現れ、ユーザーが画面上で消せない不具合になりやすい。
 
 - **依存フィールドを追加・変更するときは、その前提を変える全入口を列挙してから実装する**
@@ -72,12 +72,12 @@ alwaysApply: false
 
 ## 注释
 
-<!-- [CMPF] classic/new 差异属 CMPF；注释写日语/英语为对日项目要求 -->
+<!-- [{{system_name}}] classic/new 差异属 {{system_name}}；注释写日语/英语为对日项目要求 -->
 - 非显而易见的状态机、权限分支、classic/new 差异 → 简短日语/英语说明 **why**
 
 ## 禁止
 
 - 硬编码 UI 字符串（locale 外）
-<!-- [CMPF] routes-new / routes-classic、naive-ui patch 属 CMPF 前端 -->
+<!-- [{{system_name}}] routes-new / routes-classic、naive-ui patch 属 {{system_name}} 前端 -->
 - 只改 `routes-new` 漏 `routes-classic`
 - 移除或绕过 `patch-package` / naive-ui patch

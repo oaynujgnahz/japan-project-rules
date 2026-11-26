@@ -43,6 +43,21 @@
     "backend_test": "./mvn8 -pl <module> -am test -DskipTests=false",
     "frontend": "cd frontend && npm run build"
   },
+  "payload": {
+    "_doc": {
+      "_": "install.sh 安装时把 payload/ 里的 {{占位符}}（文件内容和文件名）换成这里的值（见 tools/project_config.py PAYLOAD_PLACEHOLDERS）；缺键就报错退出，不回落示例的值。{{system_name}} 取 design.system_name，{{error_code}} 取 ids.error_code",
+      "repo_name": "项目仓库目录名（文档里的 <仓库> 路径）；init 默认取项目目录名",
+      "base_package": "Java 包根；init 由 src/main/java 的 package 声明公共前缀得出；非 Java 项目可空",
+      "build_cmd": "后端构建/测试命令的可执行部分（如 ./mvnw、mvn、./gradlew）；init 按构建文件得出",
+      "build_wrapper": "payload/{{build_wrapper}}（Java 8 用 Maven 包装脚本）安装成的文件名；空=不装。local_only / executable 也跟着它",
+      "error_code_prefix": "错误码前缀（文档里的例子 XXXX0073-E 用）；init 取 ids.error_code 开头的字母"
+    },
+    "repo_name": "CMPF-SRC",
+    "base_package": "com.ntt.cmpf",
+    "build_cmd": "./mvn8",
+    "build_wrapper": "mvn8",
+    "error_code_prefix": "CMPF"
+  },
   "code_comments": {
     "_doc": {
       "forbid_chinese": "enables .cursor/hooks/check-no-chinese-comments.py"
@@ -82,7 +97,7 @@
   "ledger_dir": "",
   "design": {
     "_doc": {
-      "system_name": "表紙・各 sheet 页眉的システム名。gen_design_xlsx.py 的 meta.system 取这个值；没填时脚本报错，不再默认 CMPF",
+      "system_name": "表紙・各 sheet 页眉的システム名。gen_design_xlsx.py 的 meta.system 取这个值；没填时脚本报错，不回落任何项目的默认值",
       "doc_no_format": "文書番号格式（表紙）",
       "detail_template": "内部詳細設計書的空模板，用 gen_design_xlsx.py --blank --system <system_name> 生成",
       "screen_template": "对外画面設計書的公司模板（export_scr.py）",
@@ -194,12 +209,12 @@
   },
   "unit_test": {
     "_doc": {
-      "_note": "以 _ 开头的键是说明，脚本读取时跳过。下面的 :行号 指通用化之前的 gen_ut_xlsx.py（commit 99d05ac），仅供追溯。gen_ut_xlsx.py 现在通过 --config 读取 i18n.*、ids.error_code、locale_files、error_message_templates、language_labels。",
-      "template": "模板文件名 :41；探索顺序 :43（--template > 本工具 templates/ > 项目仓库 docs/ai-native/）。第二候补 docs/ai-native/単体テスト項目_テンプレート.xlsx 只在此说明，不另开键。",
+      "_note": "以 _ 开头的键是说明，脚本读取时跳过。下面的 :行号 指通用化之前的 gen_ut_xlsx.py（commit 99d05ac），仅供追溯。gen_ut_xlsx.py 现在通过 --config 读取 i18n.*、ids.error_code、locale_files、error_message_templates、language_labels、template。",
+      "template": "単体テンプレート xlsx。gen_ut_xlsx.py 的探索顺序：--template > 本键 > 本工具 templates/ > 项目仓库 docs/ai-native/。相对路径先按当前目录（项目根）、再按规则仓库根解决；填了却找不到就报错。规则仓库只带清理过的模板（无打印设置/公司元数据）；要和公司原版逐字节一致，就在 init 时填公司原版的本地路径（不提交）",
       "_shared_keys": "locale 目录和语言用顶层 i18n.locale_dir / i18n.languages；错误码格式用顶层 ids.error_code；台账目录用顶层 ledger_dir；追溯 ID 前缀用顶层 ids.prefixes。此处不重复。",
       "locale_files": "每个语言（i18n.languages）在 locale 目录下的文件，按顺序读，先读到的优先。init.sh 按子目录/文件名扫描得出。",
       "_error_code_diff": "错误码只认 ids.error_code（不再用旧的宽松正则 [A-Z]{2,8}\\d{3,5}-[EIW]），其他前缀不算错误码；read_design.py 也改用它（旧版漏了 -I）。",
-      "trace_id_regex": "追溯 ID（BR/AC/Q）正则，gen_ut_xlsx.py 的 lint 读它（设计书模板的约定，init 沿用示例）",
+      "trace_id_regex": "追溯 ID（BR/AC/Q）正则（设计书模板的约定，init 沿用示例）。现行 gen_ut_xlsx.py 不读，保留给台账/报告用",
       "viewpoints": "試験観点 16 词，取自 VIEWPOINTS :48-53。",
       "viewpoints_required": "模板 試験観点 sheet 中 対象=〇 的默认必覆盖项（模板第 3、4、5、7、8、9、10、16 行）。脚本目前没有对应常量。",
       "display_types": "表示タイプ :54（定义 :48）。",

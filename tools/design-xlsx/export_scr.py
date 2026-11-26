@@ -11,7 +11,7 @@ import openpyxl
 warnings.filterwarnings("ignore")
 from tpl import validate, Sheet, HERE, die, load_spec, out_path, sheet_title, title_of, to_date, write_history, strip_props
 
-# [CMPF] 版式：sheet 名（レイアウト/画面項目/画面操作詳細）、列位置、原型行号对应按 CMPF 样本做的画面模板；换模板要改（将来移到 project.json）
+# [项目约定] 版式：sheet 名（レイアウト/画面項目/画面操作詳細）、列位置、原型行号对应按示例项目样本做的画面模板；换模板要改（将来移到 project.json）
 BASE = ["レイアウト", "画面項目", "画面操作詳細"]
 # 画面項目シートの列
 ITEM_COLS = [("group", "C"), ("name", "J"), ("widget", "Q"), ("physical", "X"), ("event", "AB"), ("fixed", "AF"),

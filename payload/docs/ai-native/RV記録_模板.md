@@ -32,7 +32,7 @@
 
 | 命令 | HEAD 基线 | 改动后 | 新增失败 |
 |------|------|------|------|
-| `./mvn8 -pl … -am test -DskipTests=false` | | | |
+| `{{build_cmd}} -pl … -am test -DskipTests=false` | | | |
 | `cd frontend && npm run build` | | | |
 | `cd e2e && npm test` | | | |
 

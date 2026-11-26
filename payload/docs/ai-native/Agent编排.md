@@ -1,4 +1,4 @@
-# Agent 编排（CMPF / Cursor）
+# Agent 编排（{{system_name}} / Cursor）
 
 > **角色与 Stop Condition 以 `.cursor/rules/workflow.mdc` 为准。** 本文为架构说明。
 >
@@ -27,7 +27,7 @@ Orchestrator（workflow 开发阶段 · Prompt模板.md）
     ↓
 Feature / Test / Review / Debug / Docs
     ↓
-Skills（docs/ai-native/skills/，没有则跳过并注明）+ MCP + ./mvn8 + e2e/
+Skills（docs/ai-native/skills/，没有则跳过并注明）+ MCP + {{build_cmd}} + e2e/
     ↓
 review.mdc（RV 结果本地留存）+ 人工 PR（仅业务内容）+ CI
 ```
@@ -38,7 +38,7 @@ review.mdc（RV 结果本地留存）+ 人工 PR（仅业务内容）+ CI
 2. **Subagent**：`explore` / `shell` / `bugbot` / `ci-investigator`
 3. **Rules 按 glob** = 领域专家（java-backend、frontend-vue 等）
 
-## Scope 边界（CMPF）
+## Scope 边界（{{system_name}}）
 
 | 领域 | Feature Scope | 禁止 |
 |------|---------------|------|

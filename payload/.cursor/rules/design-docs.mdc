@@ -1,15 +1,15 @@
 ---
-description: CMPF 設計書 Markdown、仕样 MD 化优先级与实装-文档一致性
+description: {{system_name}} 設計書 Markdown、仕样 MD 化优先级与实装-文档一致性
 globs: "docs/**"
 alwaysApply: false
 ---
 
 # Design Docs (設計書)
 
-<!-- [CMPF] 画面布局以 PPT 为准属 CMPF 需求交付方式（PPT） -->
+<!-- [{{system_name}}] 画面布局以 PPT 为准属 {{system_name}} 需求交付方式（PPT） -->
 > 画面布局以 PPT 为准；流程 **`ppt-first-ui.mdc`** · 硬规则 **`cmpf-core.mdc` §画面改修 Gate**
 
-<!-- [CMPF] Future 06/07 目录结构、docs/ai-native/ 下的规范和模板路径属 CMPF；将来由项目配置的模板路径替换 -->
+<!-- [{{system_name}}] Future 06/07 目录结构、docs/ai-native/ 下的规范和模板路径属 {{system_name}}；将来由项目配置的模板路径替换 -->
 ## 目录（Future 06/07）
 
 - 一功能一文件夹：`docs/{機能}/`
@@ -24,7 +24,7 @@ alwaysApply: false
 ## 原稿与导出（第 3、13 条）
 
 - **MD 是原稿**，只改 MD；xlsx 从 MD 导出，给不读 MD 的人（甲方、测试、评审）看，不手工改 xlsx。
-<!-- [CMPF] xlsx 拆成 API設計書 / 画面設計書 两份是照 CMPF 用户样本定的版式；将来由项目配置的模板替换 -->
+<!-- [{{system_name}}] xlsx 拆成 API設計書 / 画面設計書 两份是照 {{system_name}} 用户样本定的版式；将来由项目配置的模板替换 -->
 - xlsx 形式：拆成两份（照用户样本）：`API設計書_{機能}.xlsx`（API 一覧・入出力・处理・错误码）+ `画面設計書_{機能}.xlsx`（画面项目・事件・受入基準）。BR / AC 编号在两份里都保留，便于追溯。
 - **对外 xlsx 禁止项**：交给甲方的 xlsx 不写 Q 编号、文件路径、行号、agent / bot 名；函数名只放「実装対照」。Q 的内容只留在 MD §10 要確認事項。
 - MD 有行为变更（BR、AC、画面项目、API 分支、错误码）时，同一轮重新导出 xlsx；只改错字可不导出，在变更记录注明。
@@ -33,9 +33,9 @@ alwaysApply: false
 - 导出工具：`tools/design-xlsx/`（`export_scr.py` / `export_api.py`，读 design.json，套 `templates/` 下的公司模板）。不要按功能复制一份构建脚本。
 - **写作顺序**：MD 原稿先用中文写给开发方确认；内容定稿后再出日文 MD 和 xlsx，两边同步保持最终版。
 - **交付目录**：放回仓库 `docs/{機能}/` 时新建 `v{版本号}_{YYYYMMDD}/` 子目录，不覆盖已有文件；放回前先问用户。
-- **错误码**：格式以项目配置 `ids.error_code` 为准（CMPF 为 `CMPF\d{4}-[EIW]`，含 -I 信息 / -W 警告），チェック・エラー一覧的レベル列按 E/I/W 对应；文言以代码 locale 为准。
+- **错误码**：格式以项目配置 `ids.error_code` 为准（{{system_name}} 为 `{{error_code}}`，含 -I 信息 / -W 警告），チェック・エラー一覧的レベル列按 E/I/W 对应；文言以代码 locale 为准。
 
-<!-- [CMPF] docs/ai-native/ 模板和 仕様MD化_バックログ.md 路径属 CMPF -->
+<!-- [{{system_name}}] docs/ai-native/ 模板和 仕様MD化_バックログ.md 路径属 {{system_name}} -->
 ## 仕样 MD 化（强制策略）
 
 | 场景 | 要求 |
@@ -83,7 +83,7 @@ alwaysApply: false
 - 代码变更后对照设计书做一致性 RV（见 `review.mdc`）
 - 画面 MD：API、事件、校验、错误；布局/控件与 PPT 一致并注明 slide/注釈（`ppt-first-ui.mdc`）
 - API MD：流程、异常、权限；OpenAPI 为契约
-<!-- [CMPF] 06_画面設計書 表头写 PPT 来源属 CMPF 需求交付方式（PPT） -->
+<!-- [{{system_name}}] 06_画面設計書 表头写 PPT 来源属 {{system_name}} 需求交付方式（PPT） -->
 - `06_画面設計書` 表头须含 **要件来源（PPT）**；未实现项用 **実装状態サマリ（⏳）** 标明
 
 ## 开发时设计留存（强制 · Code ↔ Docs Sync）
@@ -109,7 +109,7 @@ alwaysApply: false
 
 Agent **功能开发** 阶段：每完成一块业务逻辑，同步更新上述 MD（与代码同一 PR / 同一任务内）。
 
-<!-- [CMPF] 参考范例均为 CMPF 功能的设计书 -->
+<!-- [{{system_name}}] 参考范例均为 {{system_name}} 功能的设计书 -->
 ## 参考
 
 - 完成范例：`docs/PCF算定_Excel取込/`、`docs/报告出力_排出量PPT/`、`docs/PCF算定_UIUX改善/処理フロー詳細.md`

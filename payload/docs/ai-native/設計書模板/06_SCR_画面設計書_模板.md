@@ -66,7 +66,7 @@ sequenceDiagram
 
 | 项番 | 规则 | 时机 | messageKey |
 |------|------|------|------------|
-| 1 | {…} | blur / submit | `{CMPF…}` |
+| 1 | {…} | blur / submit | `{{{error_code_prefix}}…}` |
 
 ## 7. コンポーネント連携
 

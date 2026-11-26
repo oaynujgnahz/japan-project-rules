@@ -1,4 +1,4 @@
-# CMPF AI Native 基础整备
+# {{system_name}} AI Native 基础整备
 
 基于 CO2MOS AI 本格運用方針 v2。
 

@@ -1,4 +1,4 @@
-# MCP & Skill 一覧（CMPF）
+# MCP & Skill 一覧（{{system_name}}）
 
 > **环节强制要求以 `.cursor/rules/workflow.mdc` 为准。**
 

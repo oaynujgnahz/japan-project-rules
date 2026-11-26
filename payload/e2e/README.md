@@ -1,4 +1,4 @@
-# CMPF E2E（Playwright）
+# {{system_name}} E2E（Playwright）
 
 结合测试脚本目录，配合 **Playwright MCP** 或 CI 使用（CO2MOS PPT：逐步替代 MagicPod 手工）。
 

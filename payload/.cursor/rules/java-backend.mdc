@@ -1,16 +1,16 @@
 ---
-description: CMPF Java/Spring Boot 后端编码与数据层规范
+description: {{system_name}} Java/Spring Boot 后端编码与数据层规范
 globs: "**/*.java,**/mapper/**/*.xml,**/*.sql"
 alwaysApply: false
 ---
 
-<!-- [CMPF] 整份为 CMPF 后端技术栈（Java 8 / Spring Boot / MyBatis / JUnit 4）专属；将来移到技术栈配置 -->
+<!-- [{{system_name}}] 整份为 {{system_name}} 后端技术栈（Java 8 / Spring Boot / MyBatis / JUnit 4）专属；将来移到技术栈配置 -->
 # Java Backend
 
 ## 结构
 
-<!-- [CMPF] com.ntt.cmpf 包结构、carbonapi 的 SQL 路径属 CMPF -->
-- 包：`com.ntt.cmpf.{module}.*`（controller / service / mapper / dto / entity）
+<!-- [{{system_name}}] {{base_package}} 包结构、carbonapi 的 SQL 路径属 {{system_name}} -->
+- 包：`{{base_package}}.{module}.*`（controller / service / mapper / dto / entity）
 - MyBatis XML：`{module}/src/main/resources/mapper/`
 - SQL 脚本：`carbonapi/src/main/resources/sql/` 或根目录 `.sql`
 - 新功能类名按业务域命名，避免滥用 `Ghg` 等宽泛前缀
@@ -21,7 +21,7 @@ alwaysApply: false
 - 新 DB 功能：检查 SQL、mapper XML、Java model、frontend API 类型是否都要改
 - 保持 XML resultMap 与 entity 字段一致
 
-<!-- [CMPF] MyBatis Generator 生成实体自动 trim 是 CMPF 生成配置下的坑；示例类为 CMPF 色統一功能 -->
+<!-- [{{system_name}}] MyBatis Generator 生成实体自动 trim 是 {{system_name}} 生成配置下的坑；示例类为 {{system_name}} 色統一功能 -->
 ## MyBatis Generator 生成实体的陷阱
 
 - `dto/entity/dbo/*Entity` 等生成实体的 String setter **会自动 trim**（前后空格被去掉）
@@ -42,7 +42,7 @@ alwaysApply: false
 
 ## 注释
 
-<!-- [CMPF] 注释写日文或英文、禁止中文注释及 hook 为对日项目要求 -->
+<!-- [{{system_name}}] 注释写日文或英文、禁止中文注释及 hook 为对日项目要求 -->
 - 日语或英语；写 **为什么**（业务规则、例外原因、兼容性），不写「getter/setter 取得」类废话
 - 复杂分支、魔法数、workaround 必须注释理由
 - 注释中不写 BR / AC / Q 编号、`docs/` 路径、设计书名（本地专用规则，提交物中不可出现）；用业务语言说明
@@ -68,14 +68,14 @@ else { throw new BusinessException("..."); }
 
 ## 报告 / 文件生成
 
-<!-- [CMPF] carbonapi 报告生成、cmpf-report-file-io skill、PCF 等日文业务术语属 CMPF -->
+<!-- [{{system_name}}] carbonapi 报告生成、cmpf-report-file-io skill、PCF 等日文业务术语属 {{system_name}} -->
 - `carbonapi` 中 Excel、PDF、PPT、报告生成对 fonts、模板、坐标敏感
 - 改动前读既有实现；参照 `cmpf-report-file-io` skill
 - PCF、电力连携、报告、削減相关保留日语业务术语（除非用户要求翻译）
 
 ## 测试
 
-<!-- [CMPF] JUnit 4、{module} 路径和测试样例类属 CMPF -->
+<!-- [{{system_name}}] JUnit 4、{module} 路径和测试样例类属 {{system_name}} -->
 - `{module}/src/test/java/.../{Class}Test.java`（JUnit 4）
 - POI/PPT/Excel：classpath 模板 + 断言
 - 参照 `PcfCalculationExcelTemplateComposerTest`、`carbonapi/.../report/*Test.java`

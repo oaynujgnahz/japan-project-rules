@@ -1,32 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""設計書読取ツール（単体テスト Case のトレース確認用）
+"""设计书读取助手（単体テスト Case 用）
 
-  python3 read_design.py <src> [<src> ...] --ids      # ID 一覧（ID / 種別 / 名称 / 出典）
-  python3 read_design.py <src> [<src> ...] --json     # 同上を JSON で出力
-  python3 read_design.py <src> [<src> ...] --dump     # 設計書本文をテキスト化（読む用）
-  python3 read_design.py <中間JSON> --draft -o draft.cases.json   # Case 骨架を起草（要手直し）
-  いずれも --config project.json が必須（init.sh で生成した項目配置。示例配置・缺键はエラー）
+  python3 read_design.py <src> --ids --config project.json   # 列出需要被 Case 覆盖的 ID（画面/API/BR/AC/错误码）
+  python3 read_design.py <design.json> --draft -o draft.cases.json --config project.json [--feature 機能名]
+                                                  # 从设计 JSON 起草 Case 骨架（再由人/agent 补充、精修）
+  python3 read_design.py <src> --dump             # 把设计书正文转成纯文本（MD 目录 / xlsx 都可），方便阅读
 
-<src> に指定できるもの（複数可・混在可）:
-  * docs/{機能}/ ディレクトリ
-      中の 中間 JSON（design.json / *.design.json）があればそれを最優先で使う。
-      無ければ API設計書_*.xlsx + 画面設計書_*.xlsx + MD/YAML（README・詳細設計書・
-      06_画面設計書・07_API設計書・验收标准・openapi.yaml など）をまとめて読む。
-  * API設計書_{機能}.xlsx / 画面設計書_{機能}.xlsx（片方だけでも可。足りない方は警告）
-  * 個別の .md / .yaml ファイル
-  * 中間 JSON（docs/{機能}/design.json。設計書 MD → xlsx の間に作る JSON。
-    形式は tools/design-xlsx/README.md「JSON 格式说明」）
+--config 是 init.sh 生成的 project.json：错误码按 ids.error_code，画面 / API ID 按 ids.screen_id / ids.api_id 抽取。
+gen_ut_xlsx.py 经由调用时自动设定。
 
-読み取りの優先順位: 中間 JSON ＞ 2 本の設計書 xlsx + MD。
-`--no-json` を付けると中間 JSON があっても xlsx + MD を読む（突き合わせ用）。
-中間 JSON では screens[] / apis[] とその下の items / events / steps / check・table(branch) 行を再帰的にたどり、
-各要素の id と refs{br,ac,q}、error_code、api_id を集める。画面・API・エラーコードは Case 必須、
-画面項目・事件・処理步骤・检查项・分岐の要素 ID は一覧に出す（--all）が必須にはしない（BR/AC で追溯するため）。
-
-抽出する ID: 画面 ID / API ID / エラーコード（書式は --config の ids.screen_id / ids.api_id / ids.error_code）、BR-nn / AC-nn / Q-nn / BL-nn / F-nn。
-「BR-nn 欠番」「AC-nn（撤回）」のように書かれた ID は欠番として別扱い（Case 必須から外す・再利用を警告）。
-依存: 標準ライブラリ + openpyxl（xlsx を読むときだけ）。
+<src> 可以是：
+  * 设计书 bot（tools/design-xlsx/gen_design_xlsx.py）的 design.json
+  * 仓库 docs/{機能}/ 目录（README / 詳細設計書 / 06_画面設計書 / 07_API設計書 / 验收标准 / openapi.yaml）
+  * cmpf-design-doc-xlsx 生成的 設計書.xlsx 或仓库里的任意设计书 xlsx
 """
 from __future__ import annotations
 
@@ -35,427 +22,190 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-# ------------------------------------------------------------------ ID patterns
-# kind, regex, required(=Case で必ず覆う)
-# SCR / API / エラーコードの書式は項目配置（ids.screen_id / ids.api_id / ids.error_code）から configure() で入れる。
-# 配置なしで読むと止まる（CMPF の書式に回落しない）。BR-/AC-/Q-/BL-/F- は設計書テンプレートの約定。
-_FIXED_PATTERNS = [
-    ("BR", re.compile(r"(?<![\w-])BR-\d{1,3}(?![\w-])"), True),
-    ("AC", re.compile(r"(?<![\w-])AC-(?:[A-Z]{1,6}-)?\d{1,3}(?![\w-])"), True),
-    ("Q", re.compile(r"(?<![\w-])Q-\d{1,3}(?![\w-])"), False),
-    ("BL", re.compile(r"(?<![\w-])BL-\d{1,3}(?![\w-])"), False),
-    ("F", re.compile(r"(?<![\w-])F-\d{1,3}(?![\w-])"), False),
-]
-ID_PATTERNS: List[tuple] = []
-CONFIGURED = False
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # tools/project_config.py
+import project_config  # noqa: E402
 
-
-def _bounded(body: str):
-    return re.compile(rf"(?<![\w-])(?:{body})(?![\w-])")
+CODE_REGEX = None  # configure() で ids.error_code
+ID_PATTERNS: list = []
+LANGS: list = []        # i18n.languages（先頭＝正文語）
+LANG_LABELS: dict = {}  # unit_test.language_labels（--draft の多言語 Case の備考）
 
 
 def configure(cfg: dict) -> None:
-    """項目配置を反映する。gen_ut_xlsx.py からも呼ぶ。"""
-    global CONFIGURED
+    """項目配置を反映する（ids.screen_id / ids.api_id / ids.error_code）。gen_ut_xlsx.py からも呼ぶ。"""
+    global CODE_REGEX
     ids = cfg["ids"]
-    ID_PATTERNS[:] = [("SCR", _bounded(ids["screen_id"]), True), ("API", _bounded(ids["api_id"]), True)] + \
-        _FIXED_PATTERNS[:2] + [("ERR", _bounded(ids["error_code"]), True)] + _FIXED_PATTERNS[2:]
-    CONFIGURED = True
+    LANGS[:] = list(cfg["i18n"]["languages"])
+    LANG_LABELS.clear()
+    LANG_LABELS.update({k: v for k, v in (cfg.get("unit_test", {}).get("language_labels") or {}).items()
+                        if not str(k).startswith("_")})
+    CODE_REGEX = rf"(?:{ids['error_code']})"
+    ID_PATTERNS[:] = [
+        (re.compile(rf"\b(?:{ids['screen_id']})\b"), "画面"),
+        (re.compile(rf"\b(?:{ids['api_id']})\b"), "API"),
+        (re.compile(r"\bBR-\d{1,3}\b"), "業務ルール"),
+        (re.compile(r"\bAC-(?:[A-Z]{1,6}-)?\d{1,3}\b"), "受入基準"),
+        (re.compile(r"\b" + CODE_REGEX + r"\b"), "エラー"),
+    ]
 
 
 def _need_config():
-    if not CONFIGURED:
+    if CODE_REGEX is None:
         sys.exit("ERROR: read_design: 項目配置が未設定（--config project.json を指定。gen_ut_xlsx.py 経由なら自動）")
 
 
-KIND_LABEL = {"SCR": "画面", "API": "API", "BR": "業務ルール", "AC": "受入基準", "ERR": "エラー",
-              "Q": "要確認", "BL": "処理ロジック", "F": "処理フロー"}
-REQUIRED_KINDS = {"SCR", "API", "BR", "AC", "ERR"}
-# [CMPF] ID 写法：欠番的写法「BR-nn 欠番」「（撤回）」是 CMPF 设计书的约定
-WITHDRAWN_RE = re.compile(r"([A-Z]{1,4}-[\w-]*\d)\s*[（(【]?\s*(?:欠番|撤回|廃止|削除済|withdrawn)")
-# [CMPF] 模板：跳过的 sheet 名（表紙/変更履歴/改訂履歴/実装対照）是 CMPF 设计书 xlsx 的 sheet 名
-SKIP_SHEETS = {"表紙", "変更履歴", "改訂履歴", "実装対照"}
-JSON_GLOBS = ("design.json", "*.design.json", "design_*.json")
+def _texts_from_path(src: Path) -> List[str]:
+    if src.is_dir():
+        out = []
+        for p in sorted(src.rglob("*")):
+            if p.suffix.lower() in (".md", ".yaml", ".yml") and "単体テスト" not in p.name:
+                out.append(p.read_text(encoding="utf-8", errors="ignore"))
+        return out
+    if src.suffix.lower() == ".xlsx":
+        import warnings
+        import openpyxl
+        warnings.simplefilter("ignore")
+        wb = openpyxl.load_workbook(src, data_only=True)
+        out = []
+        for ws in wb.worksheets:
+            if ws.title in ("改訂履歴", "実装対照"):
+                continue
+            for row in ws.iter_rows(values_only=True):
+                cells = [str(v) for v in row if v not in (None, "")]
+                if cells:
+                    out.append(" | ".join(cells))
+        return ["\n".join(out)]
+    return [src.read_text(encoding="utf-8")]
 
 
-class Inventory:
-    def __init__(self):
-        self.ids: Dict[str, dict] = {}       # id -> {kind, name, sources:set}
-        self.withdrawn: Dict[str, str] = {}  # id -> source
-        self.sources: List[str] = []
-        self.warnings: List[str] = []
-        self.mode = ""
-
-    def add(self, i: str, kind: str, name: str, src: str, required: Optional[bool] = None, etype: str = ""):
-        e = self.ids.setdefault(i, {"kind": kind, "name": "", "sources": set(), "required": None, "type": ""})
-        if name and not e["name"]:
-            e["name"] = name
-        if required is not None and e["required"] is not True:
-            e["required"] = required
-        if etype and not e["type"]:
-            e["type"] = etype
-        e["sources"].add(src)
-
-    def is_required(self, i: str) -> bool:
-        e = self.ids[i]
-        if i in self.withdrawn:
-            return False
-        return e["kind"] in REQUIRED_KINDS if e["required"] is None else e["required"]
-
-    def as_dict(self, required_only: bool = True) -> Dict[str, str]:
-        """gen_ut_xlsx.py のカバレッジ確認用: {id: 名称} （欠番・非必須種別は除く）"""
-        return {i: (e["name"] or KIND_LABEL.get(e["kind"], "")) for i, e in self.ids.items()
-                if i not in self.withdrawn and (not required_only or self.is_required(i))}
-
-    def to_json(self) -> dict:
-        return {"mode": self.mode, "sources": self.sources, "warnings": self.warnings,
-                "withdrawn": self.withdrawn,
-                "ids": [{"id": i, "kind": e["kind"], "type": e["type"], "name": e["name"],
-                         "required": self.is_required(i), "sources": sorted(e["sources"])}
-                        for i, e in sorted(self.ids.items(), key=lambda kv: (kv[1]["kind"], kv[0]))]}
-
-
-def kind_of(i: str) -> str:
-    for k, p, _r in ID_PATTERNS:
-        if p.fullmatch(i):
-            return k
-    return "OTHER"
-
-
-# ------------------------------------------------------------------ text extraction
-def _md_files(d: Path) -> List[Path]:
-    return [p for p in sorted(d.rglob("*")) if p.is_file() and p.suffix.lower() in (".md", ".yaml", ".yml")
-            and not p.name.startswith("._") and "単体テスト" not in p.name]
-
-
-def _xlsx_text(p: Path) -> str:
-    import warnings
-    import openpyxl
-    warnings.simplefilter("ignore")
-    wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
-    out = []
-    for ws in wb.worksheets:
-        if ws.title in SKIP_SHEETS:
-            continue
-        out.append(f"## [{ws.title}]")
-        for row in ws.iter_rows(values_only=True):
-            cells = [str(v) for v in row if v not in (None, "")]
-            if cells:
-                out.append(" | ".join(cells))
-    wb.close()
-    return "\n".join(out)
-
-
-def _scan_text(inv: Inventory, text: str, src: str):
-    for m in WITHDRAWN_RE.finditer(text):
-        inv.withdrawn.setdefault(m.group(1), src)
-    for line in text.splitlines():
-        for k, pat, _r in ID_PATTERNS:
-            for m in pat.finditer(line):
-                i = m.group(0)
-                # 表の行「| BR-nn | 名称 | …」なら次のセルを名称として拾う
-                name = ""
-                rest = line[m.end():]
-                mm = re.match(r"\s*\|\s*([^|]{1,60}?)\s*\|", rest)
-                if mm and not any(p.search(mm.group(1)) for _k, p, _ in ID_PATTERNS):
-                    name = mm.group(1).strip()
-                inv.add(i, k, name, src)
-
-
-# ------------------------------------------------------------------ intermediate JSON
-# 形式: tools/design-xlsx/README.md「JSON 格式说明」
-#   顶层 feature / version / screens[] / apis[]
-#   screen{id,type:"screen",name,refs,items[],events[{…,steps[]}]}
-#   api{id,type:"api",name,refs,steps[{…,body[{kind:"check",rows[{id,type:"check",name,error_code,refs}]},
-#                                          {kind:"table",rows[{id,type:"branch",name,refs}]}…]}]}
-#   追踪字段 refs = {"br": [...], "ac": [...], "q": [...]}
-TRACE_TYPES = {"screen", "item", "event", "api", "step", "check", "branch"}
-TOP_TYPES = {"screen", "api"}
-WITHDRAWN_STATUS = {"withdrawn", "欠番", "撤回", "廃止", "deleted"}
-
-
-def is_design_json(d) -> bool:
-    return isinstance(d, dict) and isinstance(d.get("screens", []), list) and isinstance(d.get("apis", []), list) \
-        and ("screens" in d or "apis" in d)
-
-
-def walk_elements(node, parent_type: str = ""):
-    """screens/apis 以下を再帰的にたどり、追踪字段（id + type）を持つ要素を yield する"""
-    if isinstance(node, list):
-        for x in node:
-            yield from walk_elements(x, parent_type)
-    elif isinstance(node, dict):
-        t = node.get("type")
-        if node.get("id") and (t in TRACE_TYPES or isinstance(node.get("refs"), dict)):
-            yield node
-        for k, v in node.items():
-            if isinstance(v, (list, dict)) and k != "refs":
-                yield from walk_elements(v, t or parent_type)
-
-
-def _strings(node):
-    if isinstance(node, str):
-        yield node
-    elif isinstance(node, list):
-        for x in node:
-            yield from _strings(x)
-    elif isinstance(node, dict):
-        for v in node.values():
-            yield from _strings(v)
-
-
-def _refs(el) -> List[str]:
-    r = el.get("refs") or {}
-    out = []
-    if isinstance(r, dict):
-        for key in ("br", "ac", "q"):
-            out += [str(x) for x in (r.get(key) or [])]
-    elif isinstance(r, list):  # 念のため配列形式も受ける
-        out = [str(x) for x in r]
-    return out
-
-
-def load_intermediate_json(path: Path, inv: Inventory) -> bool:
-    """中間 JSON（tools/design-xlsx/README.md「JSON 格式说明」）を読む。読めたら True。"""
-    try:
-        d = json.loads(path.read_text(encoding="utf-8"))
-    except Exception as e:  # noqa: BLE001
-        inv.warnings.append(f"中間 JSON を読めない: {path.name}（{e}）→ xlsx/MD にフォールバック")
-        return False
-    if not is_design_json(d):
-        inv.warnings.append(f"中間 JSON の形式が想定外（screens[] / apis[] が無い）: {path.name} → xlsx/MD にフォールバック")
-        return False
-    src = path.name
-    n = 0
-    for el in walk_elements([d.get("screens", []), d.get("apis", [])]):
-        eid, t = str(el["id"]), str(el.get("type") or "")
-        n += 1
-        k = kind_of(eid)
-        inv.add(eid, k if k != "OTHER" else "ELEM", str(el.get("name") or ""), src,
-                required=(t in TOP_TYPES) if t else None, etype=t)
-        if str(el.get("status") or "").lower() in WITHDRAWN_STATUS:
-            inv.withdrawn.setdefault(eid, src)
-        for r in _refs(el):
-            rk = kind_of(r)
-            inv.add(r, rk if rk != "OTHER" else "ELEM", "", src)
-        code = str(el.get("error_code") or "").strip()
-        if code and code not in ("-", "—"):
-            inv.add(code, "ERR", str(el.get("name") or ""), src, required=True)
-    # api ブロックの api_id、本文中の「BR-nn 欠番」等も拾う
-    def api_ids(node):
-        if isinstance(node, dict):
-            if node.get("kind") == "api" and node.get("api_id"):
-                inv.add(str(node["api_id"]), "API", "", src)
-            for v in node.values():
-                api_ids(v)
-        elif isinstance(node, list):
-            for v in node:
-                api_ids(v)
-    api_ids(d.get("screens", []))
-    for t in _strings(d):
-        for m in WITHDRAWN_RE.finditer(t):
-            inv.withdrawn.setdefault(m.group(1), src)
-    if n == 0:
-        inv.warnings.append(f"中間 JSON に id 付き要素が無い: {path.name}")
-    return True
-
-
-# ------------------------------------------------------------------ resolve sources
-# [CMPF] 模板：按文件名前缀 API設計書 / 画面設計書 区分两份设计书 xlsx，是 CMPF 的命名约定
-def _classify_xlsx(p: Path) -> Optional[str]:
-    if p.name.startswith("._") or "単体テスト" in p.name:
-        return None
-    if p.name.startswith("API設計書"):
-        return "api"
-    if p.name.startswith("画面設計書"):
-        return "screen"
-    return "other"
-
-
-def load(srcs: List[str], use_json: bool = True) -> Inventory:
+def inventory(src: str) -> Dict[str, str]:
     _need_config()
-    inv = Inventory()
-    jsons: List[Path] = []
-    xlsxs: List[Path] = []
-    texts: List[Path] = []
-    for s in srcs:
-        p = Path(s)
-        if not p.exists():
-            inv.warnings.append(f"見つからない: {s}")
-            continue
-        if p.is_dir():
-            for g in JSON_GLOBS:
-                jsons += [x for x in sorted(p.rglob(g)) if not x.name.startswith("._")]
-            xlsxs += [x for x in sorted(p.rglob("*.xlsx")) if _classify_xlsx(x)]
-            texts += _md_files(p)
-        elif p.suffix.lower() == ".json":
-            jsons.append(p)
-        elif p.suffix.lower() == ".xlsx":
-            if _classify_xlsx(p):
-                xlsxs.append(p)
+    p = Path(src)
+    ids: Dict[str, str] = {}
+    if p.suffix.lower() == ".json":
+        d = json.loads(p.read_text(encoding="utf-8"))
+        for s in d.get("screens", []):
+            ids[s["id"]] = s.get("name", "")
+        for a in d.get("apis", []):
+            ids[a["id"]] = a.get("name", "")
+        for b in d.get("business_rules", []):
+            bid = b.get("規則ID") if isinstance(b, dict) else b[0]
+            ids[bid] = (b.get("結果") if isinstance(b, dict) else b[2]) or ""
+        for ac in d.get("acceptance", []):
+            aid = ac.get("AC-ID") if isinstance(ac, dict) else ac[0]
+            ids[aid] = (ac.get("受入項目") if isinstance(ac, dict) else ac[1]) or ""
+        for c in d.get("checks", []):
+            code = c.get("エラーコード") if isinstance(c, dict) else c[2]
+            for cd in re.findall(CODE_REGEX, code or ""):
+                ids.setdefault(cd, c.get("チェック内容", "") if isinstance(c, dict) else c[1])
+        return ids
+    for t in _texts_from_path(p):
+        for pat, label in ID_PATTERNS:
+            for m in pat.findall(t):
+                ids.setdefault(m, label)
+    return ids
+
+
+# ------------------------------------------------------------------ draft
+def _rows(lst, keys):
+    for x in lst or []:
+        if isinstance(x, dict):
+            yield [x.get(k, "") for k in keys]
         else:
-            texts.append(p)
-
-    # 1) 中間 JSON 優先
-    if use_json and jsons:
-        ok = [j for j in dict.fromkeys(jsons) if load_intermediate_json(j, inv)]
-        if ok:
-            inv.mode = "json"
-            inv.sources = [str(j) for j in ok]
-            return inv
-
-    # 2) 2 本の xlsx + MD
-    inv.mode = "xlsx+md"
-    kinds = {}
-    for x in dict.fromkeys(xlsxs):
-        kinds.setdefault(_classify_xlsx(x), []).append(x)
-    if not kinds.get("api") and not kinds.get("screen"):
-        if xlsxs:
-            inv.warnings.append("API設計書_*.xlsx / 画面設計書_*.xlsx が見つからない（他の xlsx のみ読む）")
-        elif texts:
-            inv.warnings.append("設計書 xlsx が見つからない → MD/YAML のみで ID を抽出（xlsx 導出前の段階なら問題なし）")
-    else:
-        if not kinds.get("api"):
-            inv.warnings.append("API設計書_*.xlsx が見つからない（画面設計書のみ）→ API 側の ID は MD から補う")
-        if not kinds.get("screen"):
-            inv.warnings.append("画面設計書_*.xlsx が見つからない（API設計書のみ）→ 画面側の ID は MD から補う")
-    for x in dict.fromkeys(xlsxs):
-        try:
-            _scan_text(inv, _xlsx_text(x), x.name)
-            inv.sources.append(str(x))
-        except Exception as e:  # noqa: BLE001
-            inv.warnings.append(f"xlsx を読めない: {x.name}（{e}）")
-    for t in dict.fromkeys(texts):
-        _scan_text(inv, t.read_text(encoding="utf-8", errors="ignore"), t.name)
-        inv.sources.append(str(t))
-    if not inv.sources:
-        inv.warnings.append("読める設計書が 1 つも無い")
-    return inv
+            yield list(x) + [""] * (len(keys) - len(x))
 
 
-def inventory(srcs) -> Dict[str, str]:
-    """互換 API: {id: 名称}（Case 必須の ID のみ・欠番除く）"""
-    if isinstance(srcs, (str, Path)):
-        srcs = [str(srcs)]
-    return load(list(srcs)).as_dict()
+TYPE_MAP = {"n-button": "BTN", "button": "BTN", "n-select": "DRP", "select": "DRP", "n-input": "INP",
+            "input": "INP", "text": "LBL", "label": "LBL", "n-upload": "BTN", "n-alert": "LBL", "n-data-table": "TBL",
+            "table": "TBL", "n-checkbox": "CHK", "checkbox": "CHK", "n-radio": "RBT", "radio": "RBT", "link": "LNK"}
 
 
-def dump(srcs: List[str]) -> str:
+def draft(design: dict, feature: str) -> dict:
     _need_config()
-    out = []
-    for s in srcs:
-        p = Path(s)
-        items = []
-        if p.is_dir():
-            items = [x for x in sorted(p.rglob("*.xlsx")) if _classify_xlsx(x)] + _md_files(p)
-        elif p.exists():
-            items = [p]
-        for x in items:
-            out.append(f"# ===== {x.name}")
-            out.append(_xlsx_text(x) if x.suffix.lower() == ".xlsx" else x.read_text(encoding="utf-8", errors="ignore"))
-    return "\n\n".join(out)
-
-
-# ------------------------------------------------------------------ draft (from intermediate JSON)
-# 画面設計書「各種凡例」の論理項目種別 → 単体テンプレートの表示タイプ（無いものは TODO のまま）
-# [CMPF] 模板：论理项目种别 → 表示タイプ 的对应来自 CMPF 画面設計書「各種凡例」和单体模板凡例
-WIDGET_TYPE = {"項目ラベル": "LBL", "ラベル": "LBL", "テキストボックス": "TXT", "テキストエリア": "TXT", "ボタン": "BTN",
-               "リンク": "LNK", "プルダウン": "DRP", "ドロップダウン": "DRP", "コンボボックス": "CMB",
-               "ラジオボタン": "RBT", "チェックボックス": "CHK", "一覧": "TBL", "テーブル": "TBL", "タイトル": "TT",
-               "画像ボタン": "IB"}
-
-
-def draft(d: dict, feature: str = "") -> dict:
-    """中間 JSON から cases.json の骨架を作る。期待結果などは TODO で出すので必ず手直しする。
-    画面項目 → layout、事件 → operation、API の処理步骤・分岐 → operation、检查项 → check。"""
-    if not is_design_json(d):
-        raise SystemExit("中間 JSON の形式が想定外（screens[] / apis[] が無い）")
-
-    def ref(el):
-        return " / ".join([str(el.get("id", ""))] + _refs(el))
-    out = {"meta": {"feature": feature or d.get("feature", ""), "author": "", "created": "", "updater": "",
-                    "updated": "", "design_doc": f"design.json v{d.get('version', '')}".strip(), "lang": "ja"},
+    meta = design.get("meta", {})
+    out = {"meta": {"feature": feature or meta.get("feature", ""), "author": "AI", "created": "", "updater": "",
+                    "updated": "", "design_doc": meta.get("docs_dir", ""), "lang": meta.get("body_lang", LANGS[0])},
            "layout": [], "operation": [], "check": []}
-    for s in d.get("screens", []):
-        sid, sname = s.get("id", ""), s.get("name", "")
-        lay = [{"viewpoint": "画面レイアウト", "name": it.get("name", ""), "type": WIDGET_TYPE.get(str(it.get("widget", "")), "TODO"),
-                "label": it.get("name", ""), "note": "TODO", "ref": ref(it)}
-               for it in s.get("items", []) if isinstance(it, dict)]
-        if lay:
-            out["layout"].append({"section": f"【{sid} {sname}】", "ref": sid, "cases": lay})
-        ops = [{"viewpoint": "初期化チェック" if "初期" in str(ev.get("name", "")) else "分岐網羅",
-                "item": ev.get("name", ""), "step": "TODO", "branch": "TODO", "expected": "TODO", "ref": ref(ev)}
-               for ev in s.get("events", []) if isinstance(ev, dict)]
-        if ops:
-            out["operation"].append({"section": f"【{sid} {sname}】画面操作", "ref": sid, "cases": ops})
-    for a in d.get("apis", []):
-        aid, aname = a.get("id", ""), a.get("name", "")
-        ops, chk = [], []
-        for el in walk_elements(a.get("steps", [])):
-            t = el.get("type")
-            if t in ("step", "branch"):
-                ops.append({"viewpoint": "分岐網羅", "item": el.get("name", ""), "step": "TODO",
-                            "branch": el.get("name", "") if t == "branch" else "TODO", "expected": "TODO", "ref": ref(el)})
-            elif t == "check":
-                row = {"viewpoint": "例外処理の網羅", "field": el.get("name", ""), "screen": "TODO",
-                       "branch1": el.get("condition") or "TODO", "expected": "TODO", "ref": ref(el)}
-                if el.get("error_code"):
-                    row["code"] = el["error_code"]
-                    row.pop("expected")
-                chk.append(row)
-        if ops:
-            out["operation"].append({"section": f"【{aid} {aname}】", "ref": aid, "cases": ops})
-        if chk:
-            out["check"].append({"section": f"【{aid} {aname}】入力チェック", "ref": aid, "cases": chk})
+    for s in design.get("screens", []):
+        sid, name = s["id"], s.get("name", "")
+        cases = []
+        for it in _rows(s.get("items"), ["#", "項目", "物理名", "コンポーネント", "RW", "必須", "備考", "PPT"]):
+            no, item, phys, comp, rw, req, note, ppt = (it + [""] * 8)[:8]
+            cases.append({"viewpoint": "画面レイアウト", "name": item, "type": TYPE_MAP.get(str(comp).strip(), "TXT"),
+                          "label": f"TODO: 画面文言（PPT/locale {LANGS[0]}）", "required": "○" if req in ("○", "◯") else "-",
+                          "note": note or "-", "ref": f"{sid} #{no}" + (f" / slide {ppt}" if ppt else "")})
+        for k in _rows(s.get("i18n"), ["key"] + LANGS):
+            for j, lg in enumerate(LANGS[1:], start=2):  # 2 言語目以降の表示確認
+                cases.append({"viewpoint": "多言語対応チェック", "name": f"{k[1]}（{lg}）", "type": "LBL", "label": k[j],
+                              "note": f"{LANG_LABELS.get(lg, lg)}表示時", "ref": sid})
+        out["layout"].append({"section": f"【{sid} {name}】", "ref": sid, "cases": cases})
+        ops = [{"viewpoint": "初期化チェック", "item": "初期表示", "step": "TODO: 画面を開く操作",
+                "expected": "TODO: 初期値・活性/非活性", "ref": sid}]
+        for e in _rows(s.get("events"), ["操作", "トリガー", "API", "リクエスト", "成功", "失敗"]):
+            ops.append({"viewpoint": "分岐網羅", "item": e[0], "step": f"{e[0]}を押下", "branch": "正常",
+                        "expected": e[4] or "TODO", "ref": sid})
+            if e[5] and e[5] not in ("—", "-"):
+                ops.append({"viewpoint": "例外処理の網羅", "item": e[0], "step": f"{e[0]}を押下", "branch": "失敗",
+                            "expected": e[5], "ref": sid})
+        for t in _rows(s.get("transitions"), ["操作", "遷移先", "備考"]):
+            ops.append({"viewpoint": "分岐網羅", "item": "画面遷移", "step": t[0], "branch": "-",
+                        "expected": f"{t[1]}へ遷移する。{t[2] if t[2] not in ('—', '-') else ''}".strip(), "ref": sid})
+        out["operation"].append({"section": f"【{sid} {name}】画面操作", "ref": sid, "cases": ops})
+    for a in design.get("apis", []):
+        aid = a["id"]
+        ops = []
+        for bl in _rows(a.get("logic"), ["BL", "処理", "条件", "結果", "エラー"]):
+            ops.append({"viewpoint": "分岐網羅", "item": bl[1], "step": f"{a.get('method','')} {a.get('path','')}".strip(),
+                        "branch": bl[2] or "-", "expected": bl[3] or "TODO", "ref": f"{aid} {bl[0]}"})
+        for t in _rows(a.get("tests"), ["#", "観点", "期待"]):
+            ops.append({"viewpoint": "分岐網羅", "item": t[1], "step": "TODO", "expected": t[2], "ref": aid})
+        out["operation"].append({"section": f"【{aid} {a.get('name','')}】", "ref": aid, "cases": ops})
+    br = [{"viewpoint": "分岐網羅", "item": b[0], "step": "TODO", "branch": b[1], "expected": b[2], "ref": b[0]}
+          for b in _rows(design.get("business_rules"), ["規則ID", "条件", "結果"])]
+    if br:
+        out["operation"].append({"section": "【業務ルール】", "cases": br})
+    ac = [{"viewpoint": "分岐網羅", "item": x[1], "step": "TODO", "expected": x[2], "ref": x[0]}
+          for x in _rows(design.get("acceptance"), ["AC-ID", "受入項目", "合格条件（テスト可能な形）"])]
+    if ac:
+        out["operation"].append({"section": "【受入基準】", "cases": ac})
+    chk = []
+    for c in _rows(design.get("checks"), ["ID", "チェック内容", "エラーコード", "レベル", "発生条件", "メッセージ（ja）"]):
+        for code in re.findall(CODE_REGEX, c[2] or "") or [None]:
+            row = {"viewpoint": "例外処理の網羅", "field": c[1], "screen": "TODO", "branch1": c[4], "ref": c[0]}
+            if code:
+                row["code"] = code
+            else:
+                row["expected"] = "TODO"
+            chk.append(row)
+    if chk:
+        out["check"].append({"section": None, "cases": chk})
     return out
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("src", nargs="+")
-    g = ap.add_mutually_exclusive_group()
-    g.add_argument("--ids", action="store_true", help="ID 一覧（既定）")
-    g.add_argument("--json", action="store_true", help="ID 一覧を JSON で出力")
-    g.add_argument("--dump", action="store_true", help="本文をテキスト化")
-    g.add_argument("--draft", action="store_true", help="中間 JSON から cases.json 骨架を起草")
-    ap.add_argument("--no-json", action="store_true", help="中間 JSON を使わず xlsx + MD を読む")
-    ap.add_argument("--all", action="store_true", help="--ids で Q/BL/F・画面項目/事件/步骤などの要素 ID（非必須）も表示")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("src")
+    ap.add_argument("--ids", action="store_true")
+    ap.add_argument("--draft", action="store_true")
+    ap.add_argument("--dump", action="store_true")
     ap.add_argument("--feature", default="")
     ap.add_argument("-o", "--out")
-    ap.add_argument("--config", help="項目配置 project.json（init.sh で生成。必須）")
+    ap.add_argument("--config", help="init.sh 生成的 project.json（--ids / --draft 必须）")
     a = ap.parse_args()
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    import project_config  # tools/project_config.py
-    configure(project_config.load(a.config, "read_design"))
+    if not a.dump:
+        configure(project_config.load(a.config, "read_design"))
     if a.draft:
-        d = draft(json.loads(Path(a.src[0]).read_text(encoding="utf-8")), a.feature)
+        d = draft(json.loads(Path(a.src).read_text(encoding="utf-8")), a.feature)
         s = json.dumps(d, ensure_ascii=False, indent=1)
         (Path(a.out).write_text(s, encoding="utf-8") if a.out else print(s))
         return
     if a.dump:
-        s = dump(a.src)
-        (Path(a.out).write_text(s, encoding="utf-8") if a.out else print(s))
+        print("\n\n".join(_texts_from_path(Path(a.src))))
         return
-    inv = load(a.src, use_json=not a.no_json)
-    for w in inv.warnings:
-        print("WARN", w, file=sys.stderr)
-    if a.json:
-        s = json.dumps(inv.to_json(), ensure_ascii=False, indent=1)
-        (Path(a.out).write_text(s, encoding="utf-8") if a.out else print(s))
-        return
-    print(f"# mode={inv.mode}  sources={len(inv.sources)}", file=sys.stderr)
-    lines = []
-    for i, e in sorted(inv.ids.items(), key=lambda kv: (kv[1]["kind"], kv[0])):
-        req = inv.is_required(i)
-        if not a.all and not req and i not in inv.withdrawn:
-            continue
-        mark = "欠番" if i in inv.withdrawn else ("必須" if req else "-")
-        label = KIND_LABEL.get(e["kind"], e["kind"]) + (f"/{e['type']}" if e["type"] else "")
-        lines.append(f"{i}\t{label}\t{mark}\t{e['name']}\t{','.join(sorted(e['sources']))}")
-    s = "\n".join(lines)
-    (Path(a.out).write_text(s + "\n", encoding="utf-8") if a.out else print(s))
+    for k, v in inventory(a.src).items():
+        print(f"{k}\t{v}")
 
 
 if __name__ == "__main__":

@@ -6,14 +6,14 @@ alwaysApply: false
 
 # E2E / 结合测试
 
-<!-- [CMPF] e2e/ 目录和 Playwright 配置是 CMPF-SRC 本地特有目录；将来由项目配置替换 -->
+<!-- [{{system_name}}] e2e/ 目录和 Playwright 配置是 {{repo_name}} 本地特有目录；将来由项目配置替换 -->
 ## 目录
 
 - 脚本：`e2e/tests/**/*.spec.ts`
 - 配置：`e2e/playwright.config.ts`
 - 说明：`e2e/README.md`
 
-<!-- [CMPF] 06_画面設計書、MagicPod、Keycloak 登录属 CMPF 环境 -->
+<!-- [{{system_name}}] 06_画面設計書、MagicPod、Keycloak 登录属 {{system_name}} 环境 -->
 ## Agent 执行顺序
 
 1. 从 `docs/{機能}/06_画面設計書/` 或 RV 影响范围提取 smoke 路径

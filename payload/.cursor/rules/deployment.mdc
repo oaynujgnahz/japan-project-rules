@@ -1,10 +1,10 @@
 ---
-description: CMPF Kubernetes manifests 与 CI 部署规范
+description: {{system_name}} Kubernetes manifests 与 CI 部署规范
 globs: "manifests/**,azure-pipelines*.yml"
 alwaysApply: false
 ---
 
-<!-- [CMPF] 整份为 CMPF 部署环境专属：Kubernetes manifests、Azure Pipelines、prd / mieco-prd；将来移到项目配置 -->
+<!-- [{{system_name}}] 整份为 {{system_name}} 部署环境专属：Kubernetes manifests、Azure Pipelines、prd / mieco-prd；将来移到项目配置 -->
 # Deployment And Environment Rules
 
 - `manifests/` 与 `azure-pipelines-*.yml` 为环境敏感资源

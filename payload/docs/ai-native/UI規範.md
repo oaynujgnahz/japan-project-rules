@@ -1,4 +1,4 @@
-# UI 規範（CMPF Frontend）
+# UI 規範（{{system_name}} Frontend）
 
 对应 CO2MOS 复盘：UI 长度不齐、低级错误、既存デグレ。实装前 **必须先查通用组件**。
 

@@ -1,12 +1,12 @@
 ---
-description: CMPF 单体测试、回归与验证完成标准
+description: {{system_name}} 单体测试、回归与验证完成标准
 globs: "**/*Test.java,**/test/**"
 alwaysApply: false
 ---
 
 # Testing & Verification
 
-<!-- [CMPF] JUnit 4、{module} 路径、carbonapi 测试样例属 CMPF 技术栈 -->
+<!-- [{{system_name}}] JUnit 4、{module} 路径、carbonapi 测试样例属 {{system_name}} 技术栈 -->
 ## 单体测试（JUnit 4）
 
 - 路径：`{module}/src/test/java/`
@@ -16,7 +16,7 @@ alwaysApply: false
 
 ## 变更后最低验证
 
-<!-- [CMPF] 表中 Vue 的 npm run build、locale 只需 ja/en（不需 zh）属 CMPF -->
+<!-- [{{system_name}}] 表中 Vue 的 npm run build、locale 只需 ja/en（不需 zh）属 {{system_name}} -->
 | 变更 | 验证 |
 |------|------|
 | Service | 单元测试 |
@@ -27,10 +27,10 @@ alwaysApply: false
 
 ## Agent 自测
 
-<!-- [CMPF] ./mvn8 和 frontend 构建命令属 CMPF；将来由项目配置的 BUILD_CMD 替换 -->
+<!-- [{{system_name}}] {{build_cmd}} 和 frontend 构建命令属 {{system_name}}；将来由项目配置的 BUILD_CMD 替换 -->
 ```bash
-./mvn8 -pl <module> -am test -DskipTests=false
-./mvn8 -pl <module> -am test -DskipTests=false -Dtest=<TestClass>
+{{build_cmd}} -pl <module> -am test -DskipTests=false
+{{build_cmd}} -pl <module> -am test -DskipTests=false -Dtest=<TestClass>
 cd frontend && npm run build
 ```
 

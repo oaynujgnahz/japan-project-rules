@@ -123,6 +123,7 @@ def scan_build(root: Path) -> Dict[str, dict]:
                                   "evidence": [f"pom.xml:{_line_of(t, art.start())} <artifactId>{art.group(1)}</artifactId>"] if art else ["pom.xml: 根 artifactId 未找到"]}
         out["scan.modules"] = {"value": [m for m, _ in mods], "evidence": [f"pom.xml:{ln} <module>{m}</module>" for m, ln in mods[:5]]}
         out["build.backend_test"] = {"value": f"{wrapper} -pl <module> -am test -DskipTests=false", "evidence": ["pom.xml" + (" + mvnw" if wrapper != "mvn" else "")]}
+        out["payload.build_cmd"] = {"value": wrapper, "evidence": ["pom.xml" + (" + mvnw" if wrapper != "mvn" else "")]}
         chk = {"name": "maven", "cmd": f"{wrapper} -v", "expect": jv.group(1) if jv else ""}
         out["env_checks"] = {"value": [chk], "evidence": [f"pom.xml:{_line_of(t, jv.start())} {jv.group(0).strip()}"] if jv else ["pom.xml（未写 Java 版本，只检查能运行）"]}
     elif gradle:
@@ -138,6 +139,7 @@ def scan_build(root: Path) -> Dict[str, dict]:
         out["detect.contains"] = {"value": "", "evidence": [f"{gradle.name}（gradle 没有固定的识别字符串）"]}
         out["scan.modules"] = {"value": mods, "evidence": [st.name] if st else []}
         out["build.backend_test"] = {"value": f"{wrapper} :<module>:test", "evidence": [gradle.name]}
+        out["payload.build_cmd"] = {"value": wrapper, "evidence": [gradle.name]}
         out["env_checks"] = {"value": [{"name": "gradle", "cmd": f"{wrapper} -v", "expect": ""}], "evidence": [gradle.name]}
     elif pkg.exists():
         js = json.loads(pkg.read_text(encoding="utf-8", errors="replace") or "{}")
@@ -146,6 +148,7 @@ def scan_build(root: Path) -> Dict[str, dict]:
         out["detect.contains"] = {"value": f'"name": "{js.get("name")}"' if js.get("name") else "", "evidence": ["package.json name"]}
         out["scan.modules"] = {"value": [], "evidence": []}
         out["build.backend_test"] = {"value": "", "evidence": ["package.json（无后端构建）"]}
+        out["payload.build_cmd"] = {"value": "npm", "evidence": ["package.json"]}
         out["env_checks"] = {"value": [], "evidence": []}
     # frontend
     fe = next((d for d in (root / "frontend", root) if (d / "package.json").exists()), None)
@@ -189,6 +192,8 @@ def scan_build(root: Path) -> Dict[str, dict]:
         out["scan.base_package"] = {"value": ".".join(common), "evidence": [f"{v[1]} package {k}" for k, v in sorted(pk.items(), key=lambda kv: -kv[1][0])[:3]] + [f"{n} 个源文件的公共前缀"]}
     else:
         out["scan.base_package"] = {"value": "", "evidence": ["src/main/java 下没有 package 声明"]}
+    out["payload.base_package"] = dict(out["scan.base_package"])
+    out["payload.repo_name"] = {"value": root.resolve().name, "evidence": ["项目目录名"]}
     return out
 
 
@@ -317,6 +322,10 @@ def build_questions(example: dict, scan: Dict[str, dict], loc_scan: Optional[dic
     q("ids.api_id", "required", "API ID の正則（同上）", ref=ex("ids.api_id"))
     q("design.screen_template", "required", "公司模板（画面設計書）本地路径。只记路径，不复制进规则仓库", ref=ex("design.screen_template"))
     q("design.api_template", "required", "公司模板（API設計書）本地路径。只记路径，不复制进规则仓库", ref=ex("design.api_template"))
+    q("unit_test.template", "required",
+      "単体テンプレート xlsx。空=规则仓库的清理版（tools/unit-test-xlsx/templates/）；要和公司原版逐字节一致（打印设置等）就填"
+      "公司原版的本地路径（绝对路径或项目根相对）。公司原版只放本地，不复制进规则仓库", allow_empty=True,
+      ref=ex("unit_test.template"))
     q("design.body_lang", "required", "正文语言（设计书和单体 case 共用，如 ja）", ref=ex("design.body_lang"))
     if loc_scan:
         best = loc_scan["candidates"][0] if loc_scan["candidates"] else None
@@ -327,14 +336,22 @@ def build_questions(example: dict, scan: Dict[str, dict], loc_scan: Optional[dic
     else:
         q("i18n.languages", "confirm", "项目支持的语言（第一个是正文语言）", ref=ex("i18n.languages"))
         q("ids.error_code", "confirm", "错误码正则", ref=ex("ids.error_code"))
+    q("payload.build_wrapper", "required",
+      "payload/{{build_wrapper}}（Java 8 用 Maven 包装脚本）装进项目时的文件名；空=不装（项目有自己的 mvnw/gradlew 时一般留空）",
+      allow_empty=True, ref=ex("payload.build_wrapper"))
+    best_ec = ((loc_scan or {}).get("candidates") or [{}])[0].get("regex") if loc_scan else None
+    pre = re.match(r"[A-Za-z]+", best_ec or "")
+    q("payload.error_code_prefix", "detected", "错误码前缀（规则文档里的错误码例子 XXXX0073-E 用）",
+      detected=pre.group(0) if pre else None, evidence=[f"ids.error_code 候选 {best_ec}"] if best_ec else [],
+      ref=ex("payload.error_code_prefix"))
     det = ["i18n.locale_dir", "unit_test.locale_files", "detect.file", "detect.contains", "local_only", "executable",
-           "env_checks", "build.backend_test", "build.frontend"]
+           "env_checks", "build.backend_test", "build.frontend", "payload.repo_name", "payload.build_cmd", "payload.base_package"]
     if scan:
         det += ["scan.build_tool", "scan.modules", "scan.base_package"]
     for k in det:
         s = scan.get(k)
         q(k, "detected", f"扫描结果: {k}", detected=s["value"] if s else None, evidence=s["evidence"] if s else [],
-          allow_empty=k in ("detect.contains", "build.backend_test", "build.frontend", "scan.base_package"),
+          allow_empty=k in ("detect.contains", "build.backend_test", "build.frontend", "scan.base_package", "payload.base_package"),
           ref=ex(k) if not k.startswith("scan.") else None)
     return Q
 
@@ -363,6 +380,27 @@ def template_from_example(example: dict, keys: List[str]) -> dict:
             continue
         dset(cfg, k, PH.format(k))
     return cfg
+
+
+def _resolve_wrapper(items: list, bw) -> list:
+    """payload/{{build_wrapper}} の項目を決まった名前に（空なら外す）。未決定ならそのまま"""
+    if not isinstance(bw, str) or is_unset(bw):
+        return items
+    return [x.replace("{{build_wrapper}}", bw) for x in items
+            if not (isinstance(x, str) and "{{build_wrapper}}" in x and not bw)]
+
+
+def sync_docs(cfg: dict, example: dict):
+    """_doc（说明）总是跟示例同步：既有配置重跑 init 时也换成新版说明（值不动）"""
+    for k, v in example.items():
+        if k == "_doc":
+            cfg["_doc"] = copy.deepcopy(v)
+        elif isinstance(v, dict) and isinstance(cfg.get(k), dict):
+            sync_docs(cfg[k], v)
+    order = [k for k in example if k in cfg] + [k for k in cfg if k not in example]  # 键顺序也跟示例
+    items = [(k, cfg[k]) for k in order]
+    cfg.clear()
+    cfg.update(items)
 
 
 def finalize_lang_maps(cfg: dict, example: dict, answers: Dict[str, Any], existing: Optional[dict]):
@@ -454,6 +492,8 @@ def guard_out_path(out: Path, example_path: Path) -> Optional[Path]:
 # ------------------------------------------------------------------ self test
 def self_test(cfg_path: Path, cfg: dict, project: Optional[Path], confirmed_hits: Optional[Dict[str, int]]) -> List[str]:
     log = []
+    pv = pc.payload_values(pc.load(str(cfg_path), "install"))
+    log.append("自检 0 OK：install.sh 的 payload 占位符都有值（" + ", ".join(f"{k}={v!r}" for k, v in pv.items()) + "）")
     if project is None:
         log.append("自检 1/2 跳过：--no-scan（读不到代码）。到能读到代码的机器上跑 --verify 补指纹。")
         return log
@@ -631,6 +671,8 @@ def main():
         cand = answers[k] if has_ans else (qq["detected"] if qq["kind"] == "detected" and project is not None else None)
         if qq["kind"] == "confirm" and not has_ans and interactive:
             cand = qq["detected"]
+        if k in ("local_only", "executable") and isinstance(cand, list):
+            cand = _resolve_wrapper(cand, dget(cfg, "payload.build_wrapper"))
         if cur is not None:
             if cand is None or same(cand, cur):
                 dset(cfg, k, cur)
@@ -666,6 +708,10 @@ def main():
     if missing:
         die("以下项没有回答（--answers 里缺，也不能用默认值）: " + ", ".join(missing))
 
+    sync_docs(cfg, example)
+    for k in ("local_only", "executable"):
+        if isinstance(dget(cfg, k), list):
+            dset(cfg, k, _resolve_wrapper(dget(cfg, k), dget(cfg, "payload.build_wrapper")))
     # scan-only info / language maps / fingerprint
     if project is not None:
         for k in ("scan.build_tool", "scan.modules", "scan.base_package"):

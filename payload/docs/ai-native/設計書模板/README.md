@@ -1,4 +1,4 @@
-# CMPF 設計書 Markdown 模板
+# {{system_name}} 設計書 Markdown 模板
 
 通用设计书模板，供新功能在 `docs/{機能}/` 下从零编写设计书时使用。
 
