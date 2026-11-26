@@ -145,7 +145,7 @@ SCHEMA = {
               "errors": [], "relations": [], "tests": [], "details": []}],
     "tables": [{"name": "dbo.table_name", "description": "", "change": "新規|変更|参照のみ", "columns": [], "indexes": [],
                 "entity": "", "mapper": ""}],
-    "migrations": [{"スクリプト": "carbonapi/src/main/resources/sql/xxx.sql", "環境": "dev/stg/prd", "説明": ""}],
+    "migrations": [{"スクリプト": "<module>/src/main/resources/sql/xxx.sql", "環境": "dev/stg/prd", "説明": ""}],
     "checks": [], "sqls": [], "acceptance": [], "questions": [], "impl_map": [],
     "extra_sheets": [{"name": "シート名", "blocks": [{"type": "table", "title": "", "headers": ["A", "B"], "widths": [20, 40], "rows": []},
                                                     {"type": "text", "title": "", "text": ""},
