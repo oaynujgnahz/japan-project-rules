@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """詳細設計書 (Japanese-style Excel) generator（项目共用；系统名等取自 design.json 的 meta / 项目配置）.
 
-  python3 gen_design_xlsx.py design.json -o out.xlsx          # build
-  python3 gen_design_xlsx.py --blank -o 設計書_テンプレート.xlsx  # empty template (all sheets, headers only)
+  python3 gen_design_xlsx.py design.json --config project.json -o out.xlsx          # build
+  python3 gen_design_xlsx.py --blank --config project.json -o 設計書_テンプレート.xlsx  # empty template
+  （--config は必須。meta.system は design.system_name から取る。示例配置・缺键・占位符はエラー）
   python3 gen_design_xlsx.py --schema                           # print the JSON skeleton
 
 Input: JSON (or YAML if PyYAML is installed). Every table section accepts rows as
@@ -125,7 +126,7 @@ CATALOG = [
 ]
 
 SCHEMA = {
-    "meta": {"system": "（必須）システム名＝項目配置の system_name", "feature": "機能名", "title": "（任意）表紙タイトル",
+    "meta": {"system": "（省略可）--config の design.system_name が入る。書く場合は同じ値", "feature": "機能名", "title": "（任意）表紙タイトル",
              "doc_no": "B04-G-xxx-DD", "screen_ids": "SCR-B-xx-xx-xx", "api_ids": "API-B-xx-xx-xx",
              "version": "1.00", "created": "YYYY-MM-DD", "updated": "YYYY-MM-DD", "author": "", "reviewer": "", "approver": "",
              "requirement": "要件定義書_xxx.pptx", "docs_dir": "docs/{機能}/", "related": "—",
@@ -721,27 +722,47 @@ def load(path):
         return json.load(f)
 
 
+def _project_config(path):
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    import project_config  # tools/project_config.py
+    return project_config.load(path, "design")
+
+
+def apply_config(data, cfg):
+    """meta.system / meta.author を項目配置から取る。設計書側に別の system が書いてあれば止める。"""
+    m = data.setdefault("meta", {})
+    system = cfg["design"]["system_name"]
+    cur = str(m.get("system") or "").strip()
+    if cur and cur != system:
+        sys.exit(f"ERROR: meta.system「{cur}」が項目配置の design.system_name「{system}」と違います。"
+                 f"別プロジェクトの配置を指定していないか確認してください。")
+    m["system"] = system
+    if not m.get("author") and cfg["design"].get("author"):
+        m["author"] = cfg["design"]["author"]
+    return data
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("input", nargs="?")
     ap.add_argument("-o", "--out")
+    ap.add_argument("--config", help="項目配置 project.json（init.sh で生成。必須。--schema 以外）")
     ap.add_argument("--blank", action="store_true", help="emit the empty template with every sheet")
     ap.add_argument("--schema", action="store_true", help="print JSON skeleton")
     ap.add_argument("--no-lint", action="store_true")
-    ap.add_argument("--system", help="--blank 時のシステム名（省略時はプレースホルダ）")
     a = ap.parse_args()
     if a.schema:
         print(json.dumps(SCHEMA, ensure_ascii=False, indent=2))
         return
+    cfg = _project_config(a.config)
     if a.blank:
-        data = {"meta": {"system": a.system or "{システム名}", "feature": "{機能名}", "doc_no": "{B04-G-xxx-DD}", "version": "1.00",
+        data = {"meta": {"system": cfg["design"]["system_name"], "feature": "{機能名}",
+                         "doc_no": "{" + cfg["design"]["doc_no_format"] + "}", "version": "1.00",
                          "created": "YYYY-MM-DD", "title": "{機能名} 詳細設計書"}}
     else:
         if not a.input:
             ap.error("input JSON required (or --blank / --schema)")
-        data = load(a.input)
-        if not str((data.get("meta") or {}).get("system", "")).strip():
-            sys.exit("ERROR: meta.system（システム名）が未設定です。項目配置の system_name を入れてください。")
+        data = apply_config(load(a.input), cfg)
     out = a.out or (os.path.splitext(a.input)[0] + ".xlsx" if a.input else "設計書_テンプレート.xlsx")
     wb = Book(data, blank=a.blank).build()
     wb.save(out)
@@ -751,7 +772,6 @@ def main():
         print(f"lint: {len(ws)} warning(s)")
         for x in ws:
             print("  - " + x)
-
 
 if __name__ == "__main__":
     main()

@@ -8,16 +8,24 @@ CMPF-SRC 用的 AI 开发规则：Cursor Rules、AGENTS.md、设计书 / 单体�
 ```bash
 git clone git@github.com:<org>/japan-project-rules.git ~/work/japan-project-rules
 cd ~/work/japan-project-rules
-./install.sh --dry-run ~/work/CMPF-SRC   # 先看会改什么（可选）
-./install.sh ~/work/CMPF-SRC             # 正式安装
+./init.sh ~/work/CMPF-SRC cmpf          # 第一次：只读扫描项目，逐项确认，生成本地配置
+                                          # → ~/work/CMPF-SRC/.japan-project-rules/project.json（自动写进 .git/info/exclude）
+CFG=~/work/CMPF-SRC/.japan-project-rules/project.json
+./install.sh ~/work/CMPF-SRC --config $CFG --dry-run   # 先看会改什么（可选）
+./install.sh ~/work/CMPF-SRC --config $CFG             # 正式安装
 ```
 
-脚本会做这 4 件事：
+`init.sh` 只在本地生成配置，不 commit、不 push。`projects/cmpf/project.json` 是只读示例（带 `"_example": true`），
+init 拿它当模板，脚本不会直接用它；所有脚本都必须用 `--config` 指定 init 生成的配置，没有配置、缺键、还有占位符都会报错退出，不会回落到 CMPF 的值。
+bot（没有交互终端）用 `./init.sh <项目> <名> --emit-questions` 拿问题、在聊天里问用户，再 `--answers answers.json` 生成；
+代码变了用 `./init.sh <项目> <名> --verify --out <配置>` 核对错误码条数。详见 `python3 tools/init_project.py --help`。
+
+`install.sh` 会做这 4 件事（项目相关的值都取自 `--config`）：
 
 1. 把规则复制进 CMPF-SRC（`AGENTS.md`、`.cursor/`、`docs/ai-native/`、`docs/単体テスト項目テンプレート/`、`e2e/`、`mvn8`、PR 模板、`tools/design-xlsx/`、`tools/unit-test-xlsx/`）。已有文件如果内容不同，先备份到 `.rules-backup/<时间>/` 再覆盖。
 2. 把这些文件写进 `.git/info/exclude`：只在你本地生效，`git status` 里看不到，也不用改 `.gitignore`。
 3. 把 `skills/` 下的 skill 装到 `~/.cursor/skills/`。
-4. 检查 Java 8、Maven、python3、node，缺什么会直接提示。
+4. 按配置的 `env_checks` 检查环境（CMPF 是 Java 8 + Maven、node），再查 python3 / openpyxl，缺什么会直接提示。
 
 装完用 Cursor 打开 CMPF-SRC，规则就会自动生效。
 
@@ -40,6 +48,8 @@ cd ~/work/japan-project-rules
 
 ```bash
 python3 tools/design-xlsx/export_api.py docs/{機能}/design.json
+python3 tools/design-xlsx/gen_design_xlsx.py docs/{機能}/design.json --config <配置> -o …   # 詳細設計書
+python3 tools/unit-test-xlsx/scripts/gen_ut_xlsx.py docs/{機能}/cases.json --config <配置> -o …
 ```
 
 详细用法见各目录的 `README.md`。
@@ -53,11 +63,11 @@ Grok Bot 的技能只在同一个账号的 bot 之间共用，同事的 bot 读�
    - `skills/design-doc-xlsx/`（SKILL.md + RULES.md）：詳細設計書 / 对外设计书
    - `skills/unit-test-xlsx/SKILL.md`：単体テスト項目
    - `skills/md-design-doc/` 还没通用化，先不要导入。
-3. **项目配置**：项目差异（系统名、错误码格式、locale 目录、模板）都在 `projects/<项目>/project.json`。`ledger_dir`（确认事项台账目录）留空，按自己的环境填。没有你的项目时，照 `projects/cmpf/project.json` 复制一份改。
+3. **项目配置**：项目差异（系统名、错误码格式、locale 目录和语言、模板）都在 init 生成的本地 `project.json` 里。bot 读不到用户电脑上的文件时，在 bot 自己的电脑上跑 `./init.sh … --answers`（扫描只读用户电脑，或 `--no-scan` 全部用回答），配置放在 bot 自己的目录（例：台账目录旁边）。不要把生成的配置提交进本仓库；`projects/cmpf/project.json` 只是示例，不要改它。`ledger_dir` 按自己的环境填。
 4. **bot 说明**：bot 说明里不要写别人的路径。代码目录、技能名、台账目录都换成自己的。
 5. **依赖**：`python3 -m pip install -r tools/design-xlsx/requirements.txt`（openpyxl、python-pptx；`read_pptx.py --render` 另需 LibreOffice 和 poppler）。
 
-装完先用 `python3 tools/design-xlsx/gen_design_xlsx.py --schema` 拿骨架，填上 `meta.system` 跑一次，能生成 xlsx 就说明装好了。
+装完先用 `python3 tools/design-xlsx/gen_design_xlsx.py --blank --config <配置> -o /tmp/blank.xlsx` 跑一次，能生成 xlsx 就说明装好了（`meta.system` 取配置的 `design.system_name`）。
 
 ## 日常使用
 
@@ -75,6 +85,6 @@ Grok Bot 的技能只在同一个账号的 bot 之间共用，同事的 bot 读�
 
 ## 更新规则
 
-- 更新：`git pull` 以后，再跑一次 `./install.sh <CMPF-SRC 路径>`。没变的文件会跳过，改动过的会先备份再覆盖。
+- 更新：`git pull` 以后，再跑一次 `./install.sh <CMPF-SRC 路径> --config <配置>`。没变的文件会跳过，改动过的会先备份再覆盖。
 - 改规则一律走本仓库的 PR，review 通过后再合并。推送前先扫一遍有没有个人路径、账号、库名、密码。
 - 卸载或恢复：删掉 CMPF-SRC 里对应的规则文件，或者从 `.rules-backup/<时间>/` 复制回去；再删掉 `.git/info/exclude` 里 `japan-project-rules` 那一段。

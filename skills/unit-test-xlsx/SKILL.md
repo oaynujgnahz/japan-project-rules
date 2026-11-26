@@ -13,7 +13,7 @@ description: >-
 - `ids.error_code`：错误码格式；`ids.prefixes`：追溯 ID 前缀
 - 顶层 `ledger_dir`：确认事项台账目录
 
-本仓库 `tools/unit-test-xlsx/` 是生成工具，以仓库版为准。`gen_ut_xlsx.py` 目前尚未读取 project.json；调用时按配置里 `_doc` 字段标明的对应项，显式传入 `--template`、`--locale-dir` 等参数。
+本仓库 `tools/unit-test-xlsx/` 是生成工具，以仓库版为准。`gen_ut_xlsx.py` / `read_design.py` 用 `--config <init 生成的 project.json>` 读配置（错误码格式、locale 目录、语言、各语言文件/文言书式/语言名），没有配置、示例配置、缺键都会报错退出；`--template`、`--locale-dir` 只在要覆盖时传。
 
 规则正文以 `.cursor/rules/unit-test-case-docs.mdc` 为准。
 
@@ -34,10 +34,10 @@ description: >-
 ## 步骤
 
 1. **收集输入**：功能名 `{機能}`、设计书（`docs/{機能}/`，或设计书产出的 `設計書.xlsx` / `design.json`）、PPT（可选）。项目仓库只读。已有 `単体テスト項目_{機能}.xlsx` 时先读它，只增改受影响的行，不重排、不删已有判定结果。先查台账。
-2. **读设计书**：`python3 tools/unit-test-xlsx/scripts/read_design.py <src> --ids` 得到必须覆盖的 ID 清单；`--dump` 读正文。可多个来源。
+2. **读设计书**：`python3 tools/unit-test-xlsx/scripts/read_design.py <src> --ids --config <项目配置>` 得到必须覆盖的 ID 清单；`--dump` 读正文。可多个来源。
 3. **读代码核对（只读）**：错误码实际发出的位置与条件、按钮活性/非活性、上传限制、权限常量。文言取 配置 `i18n.locale_dir` 下、`unit_test.locale_files` 列出的文件。不要读含密钥的配置，不要运行或输出 `git remote -v`。
-4. **写 cases.json**：有 `design.json` 时先 `read_design.py design.json --draft -o draft.cases.json` 起草，再补全初期化、境界値、必填、权限、多语言、非同期等，并把 TODO 全部改成可判定的期待。错误码行写 `"code"`（格式符合配置 `ids.error_code`；脚本当前按更宽的 `[A-Z]{2,8}\d{3,5}-[EIW]` 抽取，改成读配置后以配置值为准），生成器按 `unit_test.error_message_templates` 展开各语言行。格式见 `tools/unit-test-xlsx/cases.schema.json`。
-5. **生成 + lint**：`python3 tools/unit-test-xlsx/scripts/gen_ut_xlsx.py cases.json -o <输出xlsx> --template <配置 unit_test.template> --locale-dir <配置 i18n.locale_dir> --design <设计书> --trace-report <对照表>`。逐条处理警告：观点不在清单、予想結果不可判定、缺追溯 ID、重复行、函数名混入、正文语言混入、设计书 ID 未覆盖、错误码缺某个语言、设计书错误码在 locale 不存在（→ 要確認事項）。
+4. **写 cases.json**：有 `design.json` 时先 `read_design.py design.json --draft -o draft.cases.json` 起草，再补全初期化、境界値、必填、权限、多语言、非同期等，并把 TODO 全部改成可判定的期待。错误码行写 `"code"`（格式符合配置 `ids.error_code`，脚本只认这个正则），生成器按 `unit_test.error_message_templates` 展开各语言行。格式见 `tools/unit-test-xlsx/cases.schema.json`。
+5. **生成 + lint**：`python3 tools/unit-test-xlsx/scripts/gen_ut_xlsx.py cases.json --config <项目配置> -o <输出xlsx> --template <配置 unit_test.template> --design <设计书> --trace-report <对照表>`。逐条处理警告：观点不在清单、予想結果不可判定、缺追溯 ID、重复行、函数名混入、正文语言混入、设计书 ID 未覆盖、错误码缺某个语言、设计书错误码在 locale 不存在（→ 要確認事項）。
 6. **自检**：用 openpyxl 重新打开（只读，不保存）检查各 sheet 内容；转 PDF 后抽几页看排版（分组行、行高、表头无振假名混入）。确认 `試験観点` 与隐藏 sheet 未被改动，項目総計的 CASE 数与下拉范围与实际行一致。
 7. **交付**：交出 xlsx（可附对照表供内部检查）。同步回本地前先问，只放 xlsx，不覆盖，新建版本文件夹。回复里写：各 sheet Case 数、未覆盖的设计书 ID、要確認事項、建议用自动化测试覆盖的 Case。纯错字、链接或排版变更回复 `単体Case: N/A（非行为变更）`，不改 xlsx。
 

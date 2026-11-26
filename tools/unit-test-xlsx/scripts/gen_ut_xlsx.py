@@ -3,12 +3,14 @@
 """単体テスト項目 xlsx 生成 + lint（テンプレート xlsx を OOXML 最小修改）
 
 用法:
-  python3 gen_ut_xlsx.py cases.json -o docs/{機能}/単体テスト項目_{機能}.xlsx
+  python3 gen_ut_xlsx.py cases.json --config project.json -o docs/{機能}/単体テスト項目_{機能}.xlsx
                          [--design docs/{機能}/ [API設計書_x.xlsx 画面設計書_x.xlsx ...]]
                          [--template テンプレート.xlsx] [--locale-dir frontend/src/locale]
                          [--trace-report trace.md] [--strict] [--trace-col]
   python3 gen_ut_xlsx.py --schema               # cases.json の骨架を表示
-  python3 gen_ut_xlsx.py --lint-only cases.json [--design ...]
+  python3 gen_ut_xlsx.py --lint-only cases.json --config project.json [--design ...]
+  --config（init.sh で生成した項目配置）は必須。錯誤码格式・locale 目录・语言・各语言文件/文言格式/语言名都从这里取，
+  没有配置、示例配置（_example）、缺键、占位符一律报错退出。
 
 設計要点（.cursor/rules/unit-test-case-docs.mdc と一致させる）:
   * テンプレート xlsx を底にし、ZIP 成員は原样コピー。置き換えるのは
@@ -41,9 +43,10 @@ HERE = Path(__file__).resolve().parent
 TEMPLATE_NAME = "単体テスト項目_テンプレート.xlsx"
 # テンプレートの探索順: --template > このツールの templates/ > カレントの docs/ai-native/
 TEMPLATE_CANDIDATES = [HERE.parent / "templates" / TEMPLATE_NAME, Path("docs") / "ai-native" / TEMPLATE_NAME]
-# locale の自動探索（--locale-dir 省略時、カレント＝リポジトリルート想定）
-# [CMPF] 多语言：默认 locale 目录 frontend/src/locale（ja/index.ts・en/message.ts）是 CMPF 前端的目录结构，语言固定 ja/en
-LOCALE_CANDIDATES = [Path("frontend") / "src" / "locale", Path("frontend") / "locale"]
+# locale 目录・语言・文件名・错误码格式全部取自 --config 的项目配置（i18n.locale_dir / i18n.languages /
+# unit_test.locale_files / ids.error_code），不回落任何项目的默认值。--locale-dir 只覆盖目录。
+CFG: dict = {}
+LANGS: List[str] = []          # i18n.languages。先頭が本文言語（多言語対応チェック以外の行）
 
 # [CMPF] 模板：試験観点 16 词・表示タイプ・詰め方 取自 CMPF 单体模板的 試験観点 sheet 和 画面レイアウト判定 凡例
 VIEWPOINTS = [
@@ -58,9 +61,8 @@ VAGUE = {"正常", "正常に動作する", "正常終了", "正しく動作す�
          "許可", "許可される", "NG にならない"}
 # [CMPF] 正文语言：Case 正文要求日文；ZH_ONLY 用于 meta.lang=ja 时检出简体中文混入（见 lint 的 text_checks）
 ZH_ONLY = set("这们为没时后对个说么样还过从让发录删页确认击选择据项请显隐设输键钮创该页时间应")
-# メッセージコード（例: ABCD0001-E）。プロジェクトのコード体系に合わせて変更可
-# [CMPF] 错误码格式：CMPF 的消息码是 CMPFnnnn-E/W/I，这里放宽为 [A-Z]{2,8}\d{3,5}-[EIW]；Locale 读取、ja/en 展开、英语行检查都用这个格式
-CODE_RE = re.compile(r"(?<![\w-])[A-Z]{2,8}\d{3,5}-[EIW](?![\w-])")
+# メッセージコードの書式は項目配置 ids.error_code（configure() で設定）。Locale 読取・言語別展開・言語行チェックで共用
+CODE_RE: "re.Pattern" = None  # type: ignore[assignment]
 # [CMPF] ID 写法：BR-/AC-/Q- 是 CMPF 设计书的编号约定；将来 ID 规则只在 project.json 定义一份，设计书和单体 case 两个工具共读
 TRACE_RE = re.compile(r"(?<![\w-])(?:BR|AC|Q)-(?:[A-Z]{1,6}-)?\d{1,3}(?![\w-])")
 ANY_ID_RE = re.compile(r"(?<![\w-])[A-Z]{1,4}-[\w-]*\d(?![\w-])")
@@ -108,30 +110,35 @@ SCHEMA = {
 
 # ---------------------------------------------------------------- locale
 class Locale:
+    """i18n.languages の各言語について unit_test.locale_files を読み、{言語: {コード: 文言}} を作る"""
+
     def __init__(self, d: Optional[Path]):
-        self.ja: Dict[str, str] = {}
-        self.en: Dict[str, str] = {}
+        self.msgs: Dict[str, Dict[str, str]] = {lang: {} for lang in LANGS}
         if not d:
             return
-        # [CMPF] 错误码格式＋多语言：只读 ja/en 两种语言（ja_index.ts・ja/index.ts / en_message.ts・en/message.ts），消息键按 [A-Z]{2,8}\d{3,5}-[EIW] 抽取
-        pat = re.compile(r"'([A-Z]{2,8}\d{3,5}-[EIW])'\s*:\s*(?:'((?:\\'|[^'])*)'|\n\s*'((?:\\'|[^'])*)')", re.M)
-        cands = {"ja": [d / "ja_index.ts", d / "ja" / "index.ts"],
-                 "en": [d / "en_message.ts", d / "en" / "message.ts", d / "en" / "index.ts"]}
-        for lang, paths in cands.items():
-            target = self.ja if lang == "ja" else self.en
-            for p in paths:
+        body = CFG["ids"]["error_code"]
+        pat = re.compile(rf"'(?P<code>{body})'\s*:\s*(?:'(?P<v1>(?:\\'|[^'])*)'|\n\s*'(?P<v2>(?:\\'|[^'])*)')", re.M)
+        fn = re.compile(rf"'(?P<code>{body})'\s*:\s*\(\{{[^}}]*\}}\)\s*=>\s*`(?P<v>[^`]*)`")
+        for lang in LANGS:
+            target = self.msgs[lang]
+            for rel in CFG["unit_test"]["locale_files"][lang]:
+                p = d / rel
                 if not p.exists():
                     continue
                 text = p.read_text(encoding="utf-8")
-                for m in re.finditer(r"'([A-Z]{2,8}\d{3,5}-[EIW])'\s*:\s*\(\{[^}]*\}\)\s*=>\s*`([^`]*)`", text):
-                    target.setdefault(m.group(1), re.sub(r"\$\{[^}]*\}", "{0}", m.group(2)))
+                for m in fn.finditer(text):
+                    target.setdefault(m.group("code"), re.sub(r"\$\{[^}]*\}", "{0}", m.group("v")))
                 for m in pat.finditer(text):
-                    v = (m.group(2) or m.group(3) or "").replace("\\'", "'")
-                    if v and not v.startswith("(") and m.group(1) not in target:
-                        target[m.group(1)] = v
+                    v = (m.group("v1") or m.group("v2") or "").replace("\\'", "'")
+                    if v and not v.startswith("(") and m.group("code") not in target:
+                        target[m.group("code")] = v
+
+    @property
+    def primary(self) -> Dict[str, str]:
+        return self.msgs[LANGS[0]]
 
     def msg(self, code: str, lang: str, param: Optional[str] = None) -> Optional[str]:
-        raw = (self.ja if lang == "ja" else self.en).get(code)
+        raw = self.msgs.get(lang, {}).get(code)
         if raw is None:
             return None
         if param is not None:
@@ -139,33 +146,44 @@ class Locale:
         return raw
 
 
+def _msg_text(lang: str, text: str, code: str) -> str:
+    return CFG["unit_test"]["error_message_templates"][lang].replace("{code}", code).replace("{text}", text)
+
+
+def _label(lang: str) -> str:
+    return CFG["unit_test"]["language_labels"][lang]
+
+
 # ---------------------------------------------------------------- case normalisation
-# [CMPF] 多语言：code 行固定展开成「日本語」行和「英語」行（多言語対応チェック），文言格式 エラーメッセージ「…」（code）が表示される / Error message "…" (code) is displayed
+# code 行は i18n.languages の順に展開する：先頭言語の行（分岐2＝その言語名）＋ 残りの言語ごとに 多言語対応チェック 行。
+# 文言の書式は unit_test.error_message_templates、言語名は unit_test.language_labels。"pair": false なら先頭言語の行だけ。
 def expand_check_cases(groups: List[dict], loc: Locale, warnings: List[str]) -> List[dict]:
     out = []
+    first, others = LANGS[0], LANGS[1:]
     for g in groups:
         rows = []
         for c in g.get("cases", []):
             code = c.get("code")
             if code and not c.get("expected"):
-                ja = loc.msg(code, "ja", c.get("param"))
-                en = loc.msg(code, "en", c.get("param_en", c.get("param")))
-                if ja is None:
-                    warnings.append(f"[check] {code} の ja 文言が locale に無い（expected を手書きするか locale を確認）")
-                    ja = "（文言要確認）"
+                txt = loc.msg(code, first, c.get(f"param_{first}", c.get("param")))
+                if txt is None:
+                    warnings.append(f"[check] {code} の {first} 文言が locale に無い（expected を手書きするか locale を確認）")
+                    txt = "（文言要確認）"
                 base = dict(c)
-                base["branch2"] = c.get("branch2") or "日本語"
-                base["expected"] = f"エラーメッセージ「{ja}」（{code}）が表示される"
+                base["branch2"] = c.get("branch2") or _label(first)
+                base["expected"] = _msg_text(first, txt, code)
                 rows.append(base)
                 if c.get("pair", True):
-                    if en is None:
-                        warnings.append(f"[check] {code} の en 文言が locale に無い")
-                        en = "(message TBD)"
-                    e = dict(c)
-                    e["viewpoint"] = "多言語対応チェック"
-                    e["branch2"] = "英語"
-                    e["expected"] = f'Error message "{en}" ({code}) is displayed'
-                    rows.append(e)
+                    for lang in others:
+                        t = loc.msg(code, lang, c.get(f"param_{lang}", c.get("param")))
+                        if t is None:
+                            warnings.append(f"[check] {code} の {lang} 文言が locale に無い")
+                            t = "(message TBD)"
+                        e = dict(c)
+                        e["viewpoint"] = "多言語対応チェック"
+                        e["branch2"] = _label(lang)
+                        e["expected"] = _msg_text(lang, t, code)
+                        rows.append(e)
             else:
                 rows.append(c)
         out.append({"section": g.get("section"), "ref": g.get("ref"), "cases": rows})
@@ -258,7 +276,7 @@ def lint(data: dict, layout, operation, check, design_ids: Optional[Dict[str, st
                      for _, c, g in allcases)
     check_blob = "\n".join(json.dumps(c, ensure_ascii=False) for kind, c, _g in allcases if kind == "C")
     vps = {c.get("viewpoint") for _, c, _ in allcases}
-    for must in ("画面レイアウト", "分岐網羅", "多言語対応チェック"):
+    for must in ("画面レイアウト", "分岐網羅") + (("多言語対応チェック",) if len(LANGS) > 1 else ()):
         if must not in vps and layout:
             w.append(f"[coverage] 観点「{must}」の Case が0件")
     if not any(c.get("viewpoint") == "初期化チェック" for _, c, _ in allcases):
@@ -266,7 +284,7 @@ def lint(data: dict, layout, operation, check, design_ids: Optional[Dict[str, st
     if design_ids:
         miss, stale = [], []
         for i, label in design_ids.items():
-            if CODE_RE.fullmatch(i) and loc is not None and loc.ja and i not in loc.ja:
+            if CODE_RE.fullmatch(i) and loc is not None and loc.primary and i not in loc.primary:
                 if i in check_blob:
                     w.append(f"[coverage] {i} は locale に無いのに Case で使用 → 現行コードのエラーコードに置換")
                 stale.append(f"{i}（{label}）" if label else i)
@@ -302,11 +320,16 @@ def lint(data: dict, layout, operation, check, design_ids: Optional[Dict[str, st
         w.append(f"[verify] verify は {sorted(VERIFY_VALUES)} のいずれか: {sorted(set(bad_verify))}")
     if no_verify:
         w.append(f"[verify] JUnit で覆うか結合（联调）でしか確認できないかが未指定の Case {no_verify}件（verify 欄）")
-    # [CMPF] 多语言＋错误码格式：每个日文错误码 Case 都要有对应的英語（多言語対応チェック）Case
-    codes_ja = set(CODE_RE.findall("\n".join(str(c.get("expected", "")) for _, c, _ in allcases if c.get("viewpoint") != "多言語対応チェック")))
-    codes_en = set(CODE_RE.findall("\n".join(str(c.get("expected", "")) for _, c, _ in allcases if c.get("viewpoint") == "多言語対応チェック")))
-    if codes_ja - codes_en:
-        w.append(f"[coverage] 英語（多言語対応チェック）Case が無いエラーコード: {sorted(codes_ja - codes_en)}")
+    # 多言語: 先頭言語のエラーコード Case ごとに、残りの各言語の 多言語対応チェック Case が要る（i18n.languages）。
+    # 多言語行の言語は 分岐2 の言語名（unit_test.language_labels）で判定。2 言語構成なら多言語行はすべて 2 番目の言語。
+    multi = [c for _, c, _ in allcases if c.get("viewpoint") == "多言語対応チェック"]
+    codes_first = set(CODE_RE.findall("\n".join(str(c.get("expected", "")) for _, c, _ in allcases if c.get("viewpoint") != "多言語対応チェック")))
+    others = LANGS[1:]
+    for lang in others:
+        rows = multi if len(others) == 1 else [c for c in multi if str(c.get("branch2") or "").strip() == _label(lang)]
+        codes_l = set(CODE_RE.findall("\n".join(str(c.get("expected", "")) for c in rows)))
+        if codes_first - codes_l:
+            w.append(f"[coverage] {_label(lang)}（多言語対応チェック）Case が無いエラーコード: {sorted(codes_first - codes_l)}")
     return w
 
 
@@ -316,7 +339,8 @@ def design_inventory(srcs: Optional[List[str]]):
     if not srcs:
         return {}, {}, []
     sys.path.insert(0, str(HERE))
-    from read_design import load  # noqa
+    from read_design import load, configure  # noqa
+    configure(CFG)
     inv = load(list(srcs))
     print(f"design: mode={inv.mode}（json=中間 JSON / xlsx+md=設計書 xlsx と MD）読込 {len(inv.sources)} 件、"
           f"Case 必須 ID {len(inv.as_dict())} 件、欠番 {len(inv.withdrawn)} 件")
@@ -723,12 +747,19 @@ def _resolve_template(arg: Optional[str]) -> Path:
 
 
 def _resolve_locale(arg: Optional[str]) -> Optional[Path]:
+    """--locale-dir ＞ 項目配置 i18n.locale_dir（カレント＝プロジェクトのルートからの相対）。見つからなければ None"""
     if arg:
         return Path(arg)
-    for c in LOCALE_CANDIDATES:
-        if c.exists():
-            return c
-    return None
+    d = Path(CFG["i18n"]["locale_dir"])
+    return d if d.exists() else None
+
+
+def configure(cfg: dict) -> None:
+    global CODE_RE
+    CFG.clear()
+    CFG.update(cfg)
+    LANGS[:] = list(cfg["i18n"]["languages"])
+    CODE_RE = re.compile(rf"(?<![\w-])(?:{cfg['ids']['error_code']})(?![\w-])")
 
 
 def main():
@@ -737,7 +768,8 @@ def main():
     ap.add_argument("-o", "--out", help="出力 xlsx（既定: ./単体テスト項目_{meta.feature}.xlsx）")
     ap.add_argument("--design", nargs="+", metavar="SRC",
                     help="設計書（docs/{機能}/、API設計書_*.xlsx、画面設計書_*.xlsx、中間 JSON。複数可）→ ID カバレッジ確認")
-    ap.add_argument("--locale-dir", help="ja/en のメッセージ定義があるディレクトリ（省略時 frontend/src/locale を自動探索）")
+    ap.add_argument("--config", help="項目配置 project.json（init.sh で生成。必須。--schema 以外）")
+    ap.add_argument("--locale-dir", help="メッセージ定義のディレクトリ（省略時は項目配置の i18n.locale_dir）")
     ap.add_argument("--template", help=f"テンプレート xlsx（省略時 {TEMPLATE_CANDIDATES[0].parent.name}/ → docs/ai-native/）")
     ap.add_argument("--trace-col", action="store_true", help="操作/チェック sheet 右端に『設計書参照』列を追加（テンプレ外拡張・既定 OFF）")
     ap.add_argument("--strict", action="store_true", help="lint 警告があれば exit 1")
@@ -748,6 +780,9 @@ def main():
     if a.schema:
         print(json.dumps(SCHEMA, ensure_ascii=False, indent=2))
         return
+    sys.path.insert(0, str(HERE.parents[1]))
+    import project_config  # tools/project_config.py
+    configure(project_config.load(a.config, "unit_test"))
     if not a.cases:
         ap.error("cases.json を指定してください")
     data = json.loads(Path(a.cases).read_text(encoding="utf-8"))
@@ -756,7 +791,7 @@ def main():
     loc = Locale(loc_dir)
     warns: List[str] = []
     if loc_dir is None and any(c.get("code") for g in data.get("check", []) for c in g.get("cases", [])):
-        warns.append("[locale] locale が見つからない → code 行の文言が引けない（--locale-dir を指定）")
+        warns.append(f"[locale] locale（{CFG['i18n']['locale_dir']}）が見つからない → code 行の文言が引けない（--locale-dir を指定）")
     layout = data.get("layout", [])
     operation = data.get("operation", [])
     check = expand_check_cases(data.get("check", []), loc, warns)

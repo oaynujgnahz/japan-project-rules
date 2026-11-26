@@ -9,7 +9,7 @@ description: >-
 工具目录：规则仓库的 `tools/design-xlsx/`（下面的脚本路径都相对于它）；项目差异：`projects/{项目}/project.json`
 - `RULES.md`：从仓库规范提炼的完整规则（**先读**）
 - `read_pptx.py`：PPT → slides.md + 图片 + 嵌入文件
-- `gen_design_xlsx.py`：JSON → xlsx（含 lint）；`--schema` 打印 JSON 骨架；`--blank --system <system_name>` 生成空模板；design.json 的 `meta.system` 必填（取 `design.system_name`）
+- `gen_design_xlsx.py`：JSON → xlsx（含 lint）；`--schema` 打印 JSON 骨架；`--blank --config <项目配置>` 生成空模板；`--config` 必填，`meta.system` 取配置的 `design.system_name`（design.json 里写了不同的值会报错）
 - `templates/詳細設計書_テンプレート.xlsx`：内部詳細設計書空模板；`templates/画面設計書_模板.xlsx`・`API設計書_模板.xlsx`：对外公司模板（`export_scr.py` / `export_api.py`）
 - `example/`：脱敏样例
 
@@ -52,6 +52,6 @@ description: >-
 3. **读代码（理解现状，先做）**：只读执行 `rg`/`git log`/`cat`：同类后端入口（Controller/Service/Mapper/SQL）、前端画面与 API 调用、router、locale（ja/en）。也看 `docs/{機能}/` 是否已有 MD 设计书（有就以它为基础，冲突以 PPT 为准）。不要读 `.cursor/mcp.json`、`application-*.yml` 等含密钥文件；不要运行或输出 `git remote -v`（URL 里可能含 token）。
 4. **查台账**，再写中文 MD 草稿给用户确认。
 5. **写 JSON**：`python3 gen_design_xlsx.py --schema` 看骨架，参照 example/ 的脱敏样例。表格行可以用 list 或以表头为 key 的 dict；处理步骤给 list 自动编号。先填 現状分析、要件対応表，再写 処理フロー/画面/API，最后 チェック・受入基準・要確認事項・実装対照。
-6. **生成 + lint**：`python3 gen_design_xlsx.py design.json -o <工作目录>/<機能>/<機能>_設計書.xlsx`。逐条处理 lint 警告（函数名混入主文、流程块缺项、SCR 缺 PPT 来源、改修缺差异表、API 缺 BL、ID 格式、要確認缺状态、无 AC）。对外公司模板 xlsx 用导出工具生成，并确认没有 Q 编号、路径、行号、agent 名。
+6. **生成 + lint**：`python3 gen_design_xlsx.py design.json --config <项目配置> -o <工作目录>/<機能>/<機能>_設計書.xlsx`。逐条处理 lint 警告（函数名混入主文、流程块缺项、SCR 缺 PPT 来源、改修缺差异表、API 缺 BL、ID 格式、要確認缺状态、无 AC）。对外公司模板 xlsx 用导出工具生成，并确认没有 Q 编号、路径、行号、agent 名。
 7. **自检**：openpyxl 重新打开确认 sheet 列表/内容；`soffice --headless --convert-to pdf` + `pdftoppm` 抽几页看排版。按 RULES.md §7 的设计书 RV 清单自查（API/字段/校验/DB/主键分支/权限与既存一致）。
 8. **交付**：交付 xlsx；需要放回用户电脑时按上面「放回用户电脑」的规则。回复里列出：sheet 数、要確認事項（Q 列表）、⏳/△ 项、以及提醒单体测试 Case（`単体テスト項目_{機能}.xlsx`）需由开发同步。不写代码、不开 PR、不 commit。

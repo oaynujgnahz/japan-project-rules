@@ -6,6 +6,7 @@
   python3 read_design.py <src> [<src> ...] --json     # 同上を JSON で出力
   python3 read_design.py <src> [<src> ...] --dump     # 設計書本文をテキスト化（読む用）
   python3 read_design.py <中間JSON> --draft -o draft.cases.json   # Case 骨架を起草（要手直し）
+  いずれも --config project.json が必須（init.sh で生成した項目配置。示例配置・缺键はエラー）
 
 <src> に指定できるもの（複数可・混在可）:
   * docs/{機能}/ ディレクトリ
@@ -23,7 +24,7 @@
 各要素の id と refs{br,ac,q}、error_code、api_id を集める。画面・API・エラーコードは Case 必須、
 画面項目・事件・処理步骤・检查项・分岐の要素 ID は一覧に出す（--all）が必須にはしない（BR/AC で追溯するため）。
 
-抽出する ID: SCR-… / API-… / BR-nn / AC-nn / Q-nn / BL-nn / F-nn / エラーコード（XXXX0000-E/W）。
+抽出する ID: 画面 ID / API ID / エラーコード（書式は --config の ids.screen_id / ids.api_id / ids.error_code）、BR-nn / AC-nn / Q-nn / BL-nn / F-nn。
 「BR-nn 欠番」「AC-nn（撤回）」のように書かれた ID は欠番として別扱い（Case 必須から外す・再利用を警告）。
 依存: 標準ライブラリ + openpyxl（xlsx を読むときだけ）。
 """
@@ -38,20 +39,40 @@ from typing import Dict, List, Optional
 
 # ------------------------------------------------------------------ ID patterns
 # kind, regex, required(=Case で必ず覆う)
-# [CMPF] ID 写法：SCR-/API-/BR-/AC-/Q-/BL-/F- 和错误码格式是 CMPF 的约定；将来 ID 规则只在 project.json 定义一份，设计书和单体 case 两个工具共读
-ID_PATTERNS = [
-    ("SCR", re.compile(r"(?<![\w-])SCR-[A-Za-z0-9][\w-]*[A-Za-z0-9](?![\w-])"), True),
-    ("API", re.compile(r"(?<![\w-])API-[A-Za-z0-9][\w-]*[A-Za-z0-9](?![\w-])"), True),
+# SCR / API / エラーコードの書式は項目配置（ids.screen_id / ids.api_id / ids.error_code）から configure() で入れる。
+# 配置なしで読むと止まる（CMPF の書式に回落しない）。BR-/AC-/Q-/BL-/F- は設計書テンプレートの約定。
+_FIXED_PATTERNS = [
     ("BR", re.compile(r"(?<![\w-])BR-\d{1,3}(?![\w-])"), True),
     ("AC", re.compile(r"(?<![\w-])AC-(?:[A-Z]{1,6}-)?\d{1,3}(?![\w-])"), True),
-    ("ERR", re.compile(r"(?<![\w-])[A-Z]{2,8}\d{3,5}-[EW](?![\w-])"), True),
     ("Q", re.compile(r"(?<![\w-])Q-\d{1,3}(?![\w-])"), False),
     ("BL", re.compile(r"(?<![\w-])BL-\d{1,3}(?![\w-])"), False),
     ("F", re.compile(r"(?<![\w-])F-\d{1,3}(?![\w-])"), False),
 ]
+ID_PATTERNS: List[tuple] = []
+CONFIGURED = False
+
+
+def _bounded(body: str):
+    return re.compile(rf"(?<![\w-])(?:{body})(?![\w-])")
+
+
+def configure(cfg: dict) -> None:
+    """項目配置を反映する。gen_ut_xlsx.py からも呼ぶ。"""
+    global CONFIGURED
+    ids = cfg["ids"]
+    ID_PATTERNS[:] = [("SCR", _bounded(ids["screen_id"]), True), ("API", _bounded(ids["api_id"]), True)] + \
+        _FIXED_PATTERNS[:2] + [("ERR", _bounded(ids["error_code"]), True)] + _FIXED_PATTERNS[2:]
+    CONFIGURED = True
+
+
+def _need_config():
+    if not CONFIGURED:
+        sys.exit("ERROR: read_design: 項目配置が未設定（--config project.json を指定。gen_ut_xlsx.py 経由なら自動）")
+
+
 KIND_LABEL = {"SCR": "画面", "API": "API", "BR": "業務ルール", "AC": "受入基準", "ERR": "エラー",
               "Q": "要確認", "BL": "処理ロジック", "F": "処理フロー"}
-REQUIRED_KINDS = {k for k, _p, req in ID_PATTERNS if req}
+REQUIRED_KINDS = {"SCR", "API", "BR", "AC", "ERR"}
 # [CMPF] ID 写法：欠番的写法「BR-nn 欠番」「（撤回）」是 CMPF 设计书的约定
 WITHDRAWN_RE = re.compile(r"([A-Z]{1,4}-[\w-]*\d)\s*[（(【]?\s*(?:欠番|撤回|廃止|削除済|withdrawn)")
 # [CMPF] 模板：跳过的 sheet 名（表紙/変更履歴/改訂履歴/実装対照）是 CMPF 设计书 xlsx 的 sheet 名
@@ -254,6 +275,7 @@ def _classify_xlsx(p: Path) -> Optional[str]:
 
 
 def load(srcs: List[str], use_json: bool = True) -> Inventory:
+    _need_config()
     inv = Inventory()
     jsons: List[Path] = []
     xlsxs: List[Path] = []
@@ -321,6 +343,7 @@ def inventory(srcs) -> Dict[str, str]:
 
 
 def dump(srcs: List[str]) -> str:
+    _need_config()
     out = []
     for s in srcs:
         p = Path(s)
@@ -401,7 +424,11 @@ def main():
     ap.add_argument("--all", action="store_true", help="--ids で Q/BL/F・画面項目/事件/步骤などの要素 ID（非必須）も表示")
     ap.add_argument("--feature", default="")
     ap.add_argument("-o", "--out")
+    ap.add_argument("--config", help="項目配置 project.json（init.sh で生成。必須）")
     a = ap.parse_args()
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    import project_config  # tools/project_config.py
+    configure(project_config.load(a.config, "read_design"))
     if a.draft:
         d = draft(json.loads(Path(a.src[0]).read_text(encoding="utf-8")), a.feature)
         s = json.dumps(d, ensure_ascii=False, indent=1)

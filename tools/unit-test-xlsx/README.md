@@ -25,11 +25,12 @@ python3 -m pip install -r requirements.txt   # 只依赖 openpyxl，其余是标
 
 ```bash
 T=tools/unit-test-xlsx/scripts   # 放置位置按实际调整
+CFG=.japan-project-rules/project.json   # init.sh 生成的项目配置（必须；示例配置会被拒绝）
 # 1) 列出设计书 ID（可多个来源；目录会自动找 design.json / API設計書_*.xlsx / 画面設計書_*.xlsx / MD）
-python3 $T/read_design.py docs/{機能}/ --ids          # --all 连 Q/BL/F 和画面项目・事件・步骤等要素 ID 一起列；--json 输出 JSON；--dump 转纯文本
-# 有 design.json 时可先起草骨架：python3 $T/read_design.py docs/{機能}/design.json --draft -o /tmp/draft.cases.json（TODO 全部要改）
+python3 $T/read_design.py docs/{機能}/ --ids --config $CFG          # --all 连 Q/BL/F 和画面项目・事件・步骤等要素 ID 一起列；--json 输出 JSON；--dump 转纯文本
+# 有 design.json 时可先起草骨架：python3 $T/read_design.py docs/{機能}/design.json --config $CFG --draft -o /tmp/draft.cases.json（TODO 全部要改）
 # 2) 生成 + 检查
-python3 $T/gen_ut_xlsx.py docs/{機能}/cases.json \
+python3 $T/gen_ut_xlsx.py docs/{機能}/cases.json --config $CFG \
     -o docs/{機能}/単体テスト項目_{機能}.xlsx \
     --design docs/{機能}/ \
     --trace-report /tmp/trace_{機能}.md
@@ -77,12 +78,12 @@ python3 $T/gen_ut_xlsx.py docs/{機能}/cases.json \
 <!-- [CMPF] 正文语言：下面的提示词要求 Case 正文日文、画面文言和消息保持原文 -->
 ```
 请按 .cursor/rules/unit-test-case-docs.mdc，为功能「{機能}」写单体测试 Case：
-1. 先运行 python3 tools/unit-test-xlsx/scripts/read_design.py docs/{機能}/ --ids --all，拿到需要覆盖的 SCR/API/BR/AC/Q/错误码一览；
+1. 先运行 python3 tools/unit-test-xlsx/scripts/read_design.py docs/{機能}/ --ids --all --config <项目配置>，拿到需要覆盖的 SCR/API/BR/AC/Q/错误码一览；
    再读 docs/{機能}/ 下的设计书（API設計書・画面設計書 xlsx 或 MD）和相关现有代码、locale（只读）。
 2. 按 tools/unit-test-xlsx/cases.schema.json 的格式写 docs/{機能}/cases.json（可参考 examples/sample.cases.json 的形式，内容不要照抄）：
    Case 正文用日文，画面文言和消息保持原文；每条 Case 的 ref 写 BR/AC（未定的写 Q），分组行写 SCR/API 编号；
    予想結果写具体可判定的画面表示/值/DB 结果；verify 标 JUnit 或 結合。
-3. 运行 python3 tools/unit-test-xlsx/scripts/gen_ut_xlsx.py docs/{機能}/cases.json -o docs/{機能}/単体テスト項目_{機能}.xlsx --design docs/{機能}/ --trace-report /tmp/trace.md
+3. 运行 python3 tools/unit-test-xlsx/scripts/gen_ut_xlsx.py docs/{機能}/cases.json --config <项目配置> -o docs/{機能}/単体テスト項目_{機能}.xlsx --design docs/{機能}/ --trace-report /tmp/trace.md
 4. 逐条处理 lint 警告（未覆盖的 ID、不可判定的予想結果、缺 BR/AC、欠番引用等），改 cases.json 后重跑，直到只剩说明得了理由的警告。
 5. 不要用 openpyxl 另存 xlsx，不要改 試験観点 sheet。最后报告各 sheet Case 数、未覆盖的 ID、设计书与代码不一致需要确认的地方。
 ```

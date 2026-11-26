@@ -1,9 +1,11 @@
 {
+  "_example": true,
   "name": "cmpf",
   "_doc": {
-    "name": "Project config read by install.sh and tools/*. One file per project: projects/<name>/project.json; keys starting with _ are docs, readers must skip them; JSON object keys are strings (e.g. layout row 5)",
+    "name": "Project config read by install.sh and tools/* (--config). Generated per project by ./init.sh (never committed); projects/cmpf/project.json in the rules repo is only the read-only example. Keys starting with _ are docs, readers must skip them; JSON object keys are strings (e.g. layout row 5)",
     "local_only": "copied but hidden via .git/info/exclude, never committed",
-    "env_checks": "install.sh step 4; empty list = skip"
+    "env_checks": "install.sh step 4; empty list = skip",
+    "_example": "the rules-repo example carries \"_example\": true and every script refuses it; init.sh drops the flag in the generated copy"
   },
   "detect": {
     "_doc": {
@@ -57,7 +59,9 @@
   "ids": {
     "_doc": {
       "external_xlsx_hide": "Q numbers never appear in client-facing xlsx",
-      "error_code": "regex"
+      "error_code": "regex",
+      "screen_id": "画面 ID 正则（read_design.py 抽取用；不含前后边界）",
+      "api_id": "API ID 正则（同上）"
     },
     "prefixes": [
       "SCR",
@@ -71,7 +75,9 @@
     "external_xlsx_hide": [
       "Q"
     ],
-    "error_code": "CMPF\\d{4}-[EIW]"
+    "error_code": "CMPF\\d{4}-[EIW]",
+    "screen_id": "SCR-[A-Za-z0-9][\\w-]*[A-Za-z0-9]",
+    "api_id": "API-[A-Za-z0-9][\\w-]*[A-Za-z0-9]"
   },
   "ledger_dir": "",
   "design": {
@@ -89,7 +95,9 @@
       "layout.api.proto_rows": "export_api.py:15-26 R_* 原型行号",
       "layout.api.item_header": "export_api.py:27 H_ITEM",
       "_note": "layout 目前只是把脚本里写死的值记下来，脚本还没读它；换公司模板时先改这里，再改脚本让它读配置。错误码格式用顶层 ids.error_code，台账用顶层 ledger_dir",
-      "doc_root": "docs/{機能}/v{版本}_{日期}/"
+      "doc_root": "docs/{機能}/v{版本}_{日期}/",
+      "author": "作成者（可空；空时不填）",
+      "body_lang": "设计书正文语言"
     },
     "doc_root": "docs",
     "screen_template": "tools/design-xlsx/templates/画面設計書_模板.xlsx",
@@ -180,15 +188,17 @@
     },
     "system_name": "CMPF",
     "doc_no_format": "B04-G-xxx-DD",
-    "detail_template": "tools/design-xlsx/templates/詳細設計書_テンプレート.xlsx"
+    "detail_template": "tools/design-xlsx/templates/詳細設計書_テンプレート.xlsx",
+    "author": "",
+    "body_lang": "ja"
   },
   "unit_test": {
     "_doc": {
-      "_note": "以 _ 开头的键是说明，脚本读取时跳过。行号均指 tools/unit-test-xlsx/scripts/gen_ut_xlsx.py（commit 1377fc8）。",
+      "_note": "以 _ 开头的键是说明，脚本读取时跳过。下面的 :行号 指通用化之前的 gen_ut_xlsx.py（commit 99d05ac），仅供追溯。gen_ut_xlsx.py 现在通过 --config 读取 i18n.*、ids.error_code、locale_files、error_message_templates、language_labels。",
       "template": "模板文件名 :41；探索顺序 :43（--template > 本工具 templates/ > 项目仓库 docs/ai-native/）。第二候补 docs/ai-native/単体テスト項目_テンプレート.xlsx 只在此说明，不另开键。",
-      "_shared_keys": "locale 目录和语言用顶层 i18n.locale_dir / i18n.languages；错误码格式用顶层 ids.error_code（CMPF\\d{4}-[EIW]）；台账目录用顶层 ledger_dir；追溯 ID 前缀用顶层 ids.prefixes。此处不重复。",
-      "locale_files": "locale 文件名候选 :118-119（ja :118，en :119）。脚本 :46 还会搜索 frontend/locale（第二候补目录），i18n 目前只写了第一候补。",
-      "_error_code_diff": "脚本 :63、:117、:126 写死的是更宽的 [A-Z]{2,8}\\d{3,5}-[EIW]；改读 ids.error_code 后非 CMPF 前缀不再算错误码，其他项目需在自己的配置里填前缀。",
+      "_shared_keys": "locale 目录和语言用顶层 i18n.locale_dir / i18n.languages；错误码格式用顶层 ids.error_code；台账目录用顶层 ledger_dir；追溯 ID 前缀用顶层 ids.prefixes。此处不重复。",
+      "locale_files": "每个语言（i18n.languages）在 locale 目录下的文件，按顺序读，先读到的优先。init.sh 按子目录/文件名扫描得出。",
+      "_error_code_diff": "错误码只认 ids.error_code（不再用旧的宽松正则 [A-Z]{2,8}\\d{3,5}-[EIW]），其他前缀不算错误码；read_design.py 也改用它（旧版漏了 -I）。",
       "trace_id_regex": "当前脚本正则 :64-65（TRACE_RE 实际只用 BR/AC/Q），尚未改读配置。",
       "viewpoints": "試験観点 16 词，取自 VIEWPOINTS :48-53。",
       "viewpoints_required": "模板 試験観点 sheet 中 対象=〇 的默认必覆盖项（模板第 3、4、5、7、8、9、10、16 行）。脚本目前没有对应常量。",
@@ -196,14 +206,15 @@
       "align": "詰め方 :55。",
       "body_lang": "正文语言 :59-60（meta.lang=ja 时用 ZH_ONLY 检出简体中文混入）。",
       "ledger_file_pattern": "各功能一个文件，表头为 ID / 问题 / 决定 / 决定日 / 来源。不在 gen_ut_xlsx.py 中。",
-      "error_message_templates": "错误码 Case 文言展开 :143, :157-167；ja :158（branch2=日本語），en :167（観点=多言語対応チェック，branch2=英語）。",
+      "error_message_templates": "错误码 Case 的予想結果书式，{text}=locale 文言，{code}=错误码；i18n.languages 每个语言一条。第一个语言是正文行，其余是 多言語対応チェック 行。",
       "sheets": "6 个 sheet 的 XML 位置、名称与顺序 :83-86, :678-683。files.viewpoints / files.db_write 属 FIXED_FILES :86（試験観点字节不可变；DB書き込み判定保持隐藏、不放 Case）；summary/layout :84；operation/check :85；names_in_order :679；hidden :683。",
       "styles": "各 sheet 样式 ID（模板 styles.xml 的 cellXfs 编号）:71-81，换模板必须重取。layout_section :72；layout :73-76（列 A〜AA）；operation_section :77（分组行左对齐，旧 helper 用 55 会居中截断）；operation :78-79（列 A〜L）；check :80-81（列 A〜K）。",
       "layout": "画面レイアウト判定 :467-509。header_rows :467,:470；case_start_row :467,:472；legend_rows :467,:471（生成时整块挪到最后一条 Case 之后）；display_type_list_rows :467,:498（表示タイプ一覧 TT〜LNK）；模板既有下拉公式范围 $A$46:$A$56（:506 用以定位），生成后改写成含第 57 行 LNK 的新位置；result_col :505,:592,:692。",
       "operation": "画面操作処理判定 :512-542, :685-686。header_rows :512,:515；case_start_row :519；result_col :512,:592,:692；header :685-686。",
       "check": "項目チェック判定 :550-583。result_col :550,:581,:592,:692。",
       "summary": "項目総計 元数据格 :586-589 与 COUNTIF 行 :586,:592,:692；total_row :586,:600-601。case_count_rows 的键是行号（JSON 键只能是字符串）。",
-      "named_ranges": "_FilterDatabase / Print_Area 列范围 :605-614（layout :609，operation :610，check :611-614）。"
+      "named_ranges": "_FilterDatabase / Print_Area 列范围 :605-614（layout :609，operation :610，check :611-614）。",
+      "language_labels": "code 行按 i18n.languages 展开时 分岐2 写的语言名；languages 里每个语言都要有"
     },
     "template": "tools/unit-test-xlsx/templates/単体テスト項目_テンプレート.xlsx",
     "locale_files": {
@@ -271,6 +282,10 @@
     "error_message_templates": {
       "ja": "エラーメッセージ「{text}」（{code}）が表示される",
       "en": "Error message \"{text}\" ({code}) is displayed"
+    },
+    "language_labels": {
+      "ja": "日本語",
+      "en": "英語"
     },
     "sheets": {
       "files": {
