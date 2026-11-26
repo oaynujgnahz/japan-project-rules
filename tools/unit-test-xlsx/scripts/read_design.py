@@ -38,7 +38,7 @@ from typing import Dict, List, Optional
 
 # ------------------------------------------------------------------ ID patterns
 # kind, regex, required(=Case で必ず覆う)
-# [CMPF] ID 写法：SCR-/API-/BR-/AC-/Q-/BL-/F- 和错误码格式是 CMPF 的约定；将来 ID 规则只在 project.yaml 定义一份，设计书和单体 case 两个工具共读
+# [CMPF] ID 写法：SCR-/API-/BR-/AC-/Q-/BL-/F- 和错误码格式是 CMPF 的约定；将来 ID 规则只在 project.json 定义一份，设计书和单体 case 两个工具共读
 ID_PATTERNS = [
     ("SCR", re.compile(r"(?<![\w-])SCR-[A-Za-z0-9][\w-]*[A-Za-z0-9](?![\w-])"), True),
     ("API", re.compile(r"(?<![\w-])API-[A-Za-z0-9][\w-]*[A-Za-z0-9](?![\w-])"), True),

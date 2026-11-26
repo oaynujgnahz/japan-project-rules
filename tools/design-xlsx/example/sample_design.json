@@ -54,7 +54,7 @@
               {"group": "", "item": "更新日", "state": "表示", "value": "レスポンス.サンプルリスト[i].更新日時", "note": "YYYY-MM-DD"}
             ]},
             {"kind": "text", "text": "0 件の場合は「該当データがありません」を表示する。（BR-02 / AC-02）"},
-            {"kind": "ref", "text": "表示件数の上限は確認中。", "see": "※Q-1 を参照"}
+            {"kind": "ref", "text": "表示件数の上限は確認中。", "see": "※要確認事項を参照"}
           ]
         }
       ]
@@ -83,9 +83,9 @@
           "id": "API-SAMPLE-SEARCH-S01", "type": "step", "name": "リクエストをチェックする",
           "refs": {"br": ["BR-01"], "ac": [], "q": []},
           "body": [
-            {"kind": "text", "text": "以下に該当する場合、エラーコード E0001 を返却して処理を終了する。"},
+            {"kind": "text", "text": "以下に該当する場合、エラーコード XXXX0001-E を返却して処理を終了する。"},
             {"kind": "check", "rows": [
-              {"id": "API-SAMPLE-SEARCH-S01-C01", "type": "check", "name": "リクエスト.キーワード", "condition": "51文字以上", "note": "E0001", "error_code": "E0001", "refs": {"br": ["BR-01"], "ac": [], "q": []}}
+              {"id": "API-SAMPLE-SEARCH-S01-C01", "type": "check", "name": "リクエスト.キーワード", "condition": "51文字以上", "note": "XXXX0001-E", "error_code": "XXXX0001-E", "refs": {"br": ["BR-01"], "ac": [], "q": []}}
             ]}
           ]
         },

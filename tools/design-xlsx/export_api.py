@@ -10,7 +10,7 @@ import openpyxl
 warnings.filterwarnings("ignore")
 from tpl import validate, Sheet, Proto, HERE, die, load_spec, out_path, sheet_title, title_of, write_history, strip_props
 
-# [CMPF] 版式：原型行号对应按 CMPF 样本做的 API 模板；换公司模板要重新标行号（将来移到 project.yaml）
+# [CMPF] 版式：原型行号对应按 CMPF 样本做的 API 模板；换公司模板要重新标行号（将来移到 project.json）
 # テンプレート「API（サンプル）」シートの原型行
 R_BLANK = 4
 R_SEC, R_URL, R_NAME = 5, 6, 7

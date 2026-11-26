@@ -110,7 +110,9 @@ def title_of(el, no):
     """表示用タイトル：title があればそのまま、無ければ「{no} {name}（BR-01・AC-01）」。"""
     if el.get("title"): return el["title"]
     t = f"{no} {el.get('name', '')}".strip()
-    rs = refs_list(el)
+    # 対外 xlsx には Q 番号を出さない（BR / AC のみ表示）。Q は refs に残し、単体 case の追跡にだけ使う。
+    r = el.get("refs") or {}
+    rs = [x for k in ("br", "ac") for x in (r.get(k) or [])]
     return t + (f"（{'・'.join(rs)}）" if rs else "")
 
 
@@ -184,5 +186,19 @@ def validate(spec, path="design.json"):
                 elif b.get("kind") == "table":
                     for m, r in enumerate(b.get("rows") or []):
                         if isinstance(r, dict) and r.get("id"): chk(r, f"{w}.steps[{j}].body[{k}].rows[{m}]", None)
+    # 対外 xlsx 禁止項：表示テキストに Q 番号・ファイルパス・行番号を書かない（refs は追跡用なので対象外）。
+    _NG = [(re.compile(r"[QＱ][-－]\d+"), "Q 番号"),
+           (re.compile(r"[\w-]+/[\w./-]+\.(java|ts|vue|xml|py|sql|js)\b|\.(java|ts|vue|xml|py|sql|js):\d+\b"), "ファイルパス／行番号"),
+           (re.compile(r"(?i)\b(bot|agent|grok)\b|ボット|エージェント"), "agent／bot 名")]
+    def scan(o, where):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k not in ("refs", "id"): scan(v, f"{where}.{k}")
+        elif isinstance(o, list):
+            for i, v in enumerate(o): scan(v, f"{where}[{i}]")
+        elif isinstance(o, str):
+            for rx, lab in _NG:
+                if rx.search(o): errs.append(f"{where}: 対外 xlsx に {lab} は書けません（\"{o[:30]}\"）")
+    scan(spec, "$")
     if errs:
         die(f"{path}: JSON の形式エラー {len(errs)} 件\n  " + "\n  ".join(errs[:50]))

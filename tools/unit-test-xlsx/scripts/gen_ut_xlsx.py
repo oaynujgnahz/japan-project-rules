@@ -61,7 +61,7 @@ ZH_ONLY = set("这们为没时后对个说么样还过从让发录删页确认�
 # メッセージコード（例: ABCD0001-E）。プロジェクトのコード体系に合わせて変更可
 # [CMPF] 错误码格式：CMPF 的消息码是 CMPFnnnn-E/W/I，这里放宽为 [A-Z]{2,8}\d{3,5}-[EIW]；Locale 读取、ja/en 展开、英语行检查都用这个格式
 CODE_RE = re.compile(r"(?<![\w-])[A-Z]{2,8}\d{3,5}-[EIW](?![\w-])")
-# [CMPF] ID 写法：BR-/AC-/Q- 是 CMPF 设计书的编号约定；将来 ID 规则只在 project.yaml 定义一份，设计书和单体 case 两个工具共读
+# [CMPF] ID 写法：BR-/AC-/Q- 是 CMPF 设计书的编号约定；将来 ID 规则只在 project.json 定义一份，设计书和单体 case 两个工具共读
 TRACE_RE = re.compile(r"(?<![\w-])(?:BR|AC|Q)-(?:[A-Z]{1,6}-)?\d{1,3}(?![\w-])")
 ANY_ID_RE = re.compile(r"(?<![\w-])[A-Z]{1,4}-[\w-]*\d(?![\w-])")
 VERIFY_VALUES = {"JUnit", "結合", "手動"}

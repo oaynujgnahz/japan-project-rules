@@ -75,7 +75,7 @@ alwaysApply: true
 
 本仓库由甲方管理。`AGENTS.md`、`.cursor/`、`docs/`、RV 结果等本地规则和资料**不得出现在提交内容中**。
 
-<!-- [CMPF] 扫描清单中的 mvn8、e2e/、scripts/ 是 CMPF-SRC 特有文件和目录；BR/AC/Q 编号和 docs/ 为通用项。将来关键词从 project.yaml 读取 -->
+<!-- [CMPF] 扫描清单中的 mvn8、e2e/、scripts/ 是 CMPF-SRC 特有文件和目录；BR/AC/Q 编号和 docs/ 为通用项。将来关键词从 project.json 读取 -->
 - [ ] 暂存区不含本地规则和资料文件：`git diff --cached --name-only` 中无 `AGENTS.md`、`.cursor/`、`.github/`、`docs/`、`e2e/`、`scripts/`、`mvn8`
 - [ ] 暂存区不含 `.gitignore`（本地对它的改动不提交，提交时人工选文件）：`git diff --cached --quiet -- .gitignore` 返回 0
 - [ ] 代码、注释、JUnit 方法名和 `@DisplayName`、commit message 中不含设计书编号和本地资料路径：`git diff --cached | grep -nE 'BR-[0-9]|AC-[0-9]|Q-[0-9]|docs/|AGENTS|\.cursor|設計書|单体|単体テスト項目'` 无结果（误报逐条说明）

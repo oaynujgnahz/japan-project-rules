@@ -41,7 +41,7 @@ python3 $T/gen_ut_xlsx.py docs/{機能}/cases.json \
 <!-- [CMPF] 多语言＋错误码格式：语言固定 ja/en，默认 locale 目录 frontend/src/locale；错误码按 [A-Z]{2,8}\d{3,5}-[EIW]（CMPF 为 CMPFnnnn-E），code 行自动展开日文行＋英文行 -->
 - 消息文言：省略 `--locale-dir` 时自动找 `frontend/src/locale`（`ja/index.ts`、`en/message.ts`）。check 行写 `"code"` 时从这里取 ja/en 文言，自动展开日文行 + 英文行。
 - 读设计书优先级：**中間 JSON `docs/{機能}/design.json`**（也认 `*.design.json`）＞ `API設計書` + `画面設計書` 两份 xlsx + MD。JSON 读不了或格式不对会提示并自动改读 xlsx/MD；缺一份 xlsx 会提示并用 MD 补；`--no-json` 可强制读 xlsx/MD 做对照。
-<!-- [CMPF] ID 写法：SCR-/API-/BR-/AC-/Q-（以及 BL-/F-、要素 ID -I01/-E01/-S01/-C01/-B01）是 CMPF 的约定；将来 ID 规则只在 project.yaml 定义一份，设计书和单体 case 两个工具共读 -->
+<!-- [CMPF] ID 写法：SCR-/API-/BR-/AC-/Q-（以及 BL-/F-、要素 ID -I01/-E01/-S01/-C01/-B01）是 CMPF 的约定；将来 ID 规则只在 project.json 定义一份，设计书和单体 case 两个工具共读 -->
 - 中間 JSON 的格式见设计书工具的 [`tools/design-xlsx/README.md`](../design-xlsx/README.md)「JSON 格式说明」（示例 `tools/design-xlsx/example/sample_design.json`）。本工具递归读 `screens[]`/`apis[]` 及其下的 items・events・steps・check 行・table 分支行，收集每个要素的 `id`、`refs.br/ac/q`、`error_code`、`api_id`。
   画面・API・错误码是**必须有 Case** 的 ID；画面项目・事件・步骤・检查项・分支的要素 ID 只列出（`--all`），通过它们的 BR/AC 追溯。要素带 `status: "withdrawn"`（或「欠番」）、或正文写「BR-nn 欠番」时识别为欠番，不要求覆盖、引用时警告。
 <!-- [CMPF] 模板：自检的 sheet 名・顺序・隐藏 sheet・項目総計 行号按 CMPF 模板写死 -->
